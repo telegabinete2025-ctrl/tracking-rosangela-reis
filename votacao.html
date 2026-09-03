@@ -161,8 +161,8 @@ function render(){
     `<div class="kpi roxo"><div class="v">${pf(mar,n)}</div><div class="l">Márcio Lima — Estadual</div><div class="c">${fmt(mar)} citações</div></div>`,
     `<div class="kpi"><div class="v">${pf(conta(rs,'voto_federal','INDECISO'),n)}</div><div class="l">Indecisos — Federal</div><div class="c">oportunidade de convencimento</div></div>`
   ].join('');
-  grade('gradeFederal', rs, 'voto_federal', [['ROSANGELA_2215','Rosângela Reis','#1a7f37'],['OUTRO','Outro candidato','#8a919b'],['INDECISO','Não sabe / indeciso','#b8860b'],['BRANCO_NULO','Branco / nulo','#555'],['NAO_RESPONDEU','Não respondeu','#c0c5cc']]);
-  grade('gradeEstadual', rs, 'voto_estadual', [['ANDRADE_25500','Andrade 25500','#6a4fa3'],['MARCIO_25800','Márcio Lima 25800','#0b5394'],['OUTRO','Outro candidato','#8a919b'],['INDECISO','Não sabe / indeciso','#b8860b'],['BRANCO_NULO','Branco / nulo','#555'],['NAO_RESPONDEU','Não respondeu','#c0c5cc']]);
+  grade('gradeFederal', rs, 'voto_federal', [['ROSANGELA_2215','Rosângela Reis','#1a7f37'],['MARCUS_VINICIUS','Marcus Vinicius','#b3623a'],['VINICIUS_DINIZ','Vinicius Diniz','#3a7f9b'],['OUTRO','Outro candidato','#8a919b'],['INDECISO','Não sabe / indeciso','#b8860b'],['BRANCO_NULO','Branco / nulo','#555'],['NAO_RESPONDEU','Não respondeu','#c0c5cc']]);
+  grade('gradeEstadual', rs, 'voto_estadual', [['ANDRADE_25500','Andrade 25500','#6a4fa3'],['MARCIO_25800','Márcio Lima 25800','#0b5394'],['DANIEL_DO_BEM','Daniel do Bem','#2e8b74'],['HELENO_HOSPITAL','Heleno do Hospital','#b3547e'],['OUTRO','Outro candidato','#8a919b'],['INDECISO','Não sabe / indeciso','#b8860b'],['BRANCO_NULO','Branco / nulo','#555'],['NAO_RESPONDEU','Não respondeu','#c0c5cc']]);
   $('notaFederal').textContent = n? `n = ${fmt(n)} entrevistas · margem de erro ±${margem(pR,n)} p.p. (95% de confiança) para a proporção da Rosângela.` : 'Sem entrevistas no período.';
   $('notaEstadual').textContent = n? `n = ${fmt(n)} entrevistas. Amostras pequenas oscilam — acompanhe a tendência, não o dia isolado.` : '';
   grafico(); porBairro(rs); porPerfil(rs);
@@ -232,8 +232,8 @@ $('btnRel').onclick=()=>{
   const ros=conta(rs,'voto_federal','ROSANGELA_2215');
   let t=`TRACKING DE VOTAÇÃO — USO INTERNO (não divulgar)\nPeríodo: ${new Date(ini+'T12:00').toLocaleDateString('pt-BR')} a ${new Date(fim+'T12:00').toLocaleDateString('pt-BR')}\n\n`;
   t+=`Entrevistas: ${fmt(n)}\n\nDEPUTADO FEDERAL (espontânea)\n`;
-  t+=`Rosângela Reis: ${pf(ros,n)} (±${margem(pct(ros,n)/100,n)} p.p.)\nOutros: ${pf(conta(rs,'voto_federal','OUTRO'),n)}\nIndecisos: ${pf(conta(rs,'voto_federal','INDECISO'),n)}\nBranco/nulo: ${pf(conta(rs,'voto_federal','BRANCO_NULO'),n)}\n\n`;
-  t+=`DEPUTADO ESTADUAL (espontânea)\nAndrade 25500: ${pf(conta(rs,'voto_estadual','ANDRADE_25500'),n)}\nMárcio Lima 25800: ${pf(conta(rs,'voto_estadual','MARCIO_25800'),n)}\nOutros: ${pf(conta(rs,'voto_estadual','OUTRO'),n)}\nIndecisos: ${pf(conta(rs,'voto_estadual','INDECISO'),n)}\n`;
+  t+=`Rosângela Reis: ${pf(ros,n)} (±${margem(pct(ros,n)/100,n)} p.p.)\nMarcus Vinicius: ${pf(conta(rs,'voto_federal','MARCUS_VINICIUS'),n)}\nVinicius Diniz: ${pf(conta(rs,'voto_federal','VINICIUS_DINIZ'),n)}\nOutros: ${pf(conta(rs,'voto_federal','OUTRO'),n)}\nIndecisos: ${pf(conta(rs,'voto_federal','INDECISO'),n)}\nBranco/nulo: ${pf(conta(rs,'voto_federal','BRANCO_NULO'),n)}\n\n`;
+  t+=`DEPUTADO ESTADUAL (espontânea)\nAndrade 25500: ${pf(conta(rs,'voto_estadual','ANDRADE_25500'),n)}\nMárcio Lima 25800: ${pf(conta(rs,'voto_estadual','MARCIO_25800'),n)}\nDaniel do Bem: ${pf(conta(rs,'voto_estadual','DANIEL_DO_BEM'),n)}\nHeleno do Hospital: ${pf(conta(rs,'voto_estadual','HELENO_HOSPITAL'),n)}\nOutros: ${pf(conta(rs,'voto_estadual','OUTRO'),n)}\nIndecisos: ${pf(conta(rs,'voto_estadual','INDECISO'),n)}\n`;
   $('relatorio').style.display='block'; $('relatorio').textContent=t; $('btnCopiar').style.display='inline-block';
 };
 $('btnCopiar').onclick=async()=>{await navigator.clipboard.writeText($('relatorio').textContent);$('btnCopiar').textContent='✅ Copiado';setTimeout(()=>$('btnCopiar').textContent='Copiar',2000)};
