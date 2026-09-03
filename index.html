@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel — Tracking Rosângela Reis</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{--azul:#0b5394;--verde:#1a7f37;--amarelo:#b8860b;--vermelho:#c62828;--cinza:#8a919b;--fundo:#f2f3f5;--borda:#d9dde3}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--fundo);color:#1c1e21}
+  header{background:var(--azul);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  header h1{margin:0;font-size:18px}
+  header small{opacity:.85}
+  main{max-width:1200px;margin:0 auto;padding:14px}
+  .card{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:14px;margin-bottom:14px}
+  .filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .filtros select,.filtros input{padding:8px;border:1px solid var(--borda);border-radius:8px;font-size:14px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .kpi{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:12px;text-align:center}
+  .kpi .v{font-size:30px;font-weight:800;color:var(--azul)}
+  .kpi .l{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#555;margin-top:2px}
+  .kpi .c{font-size:11px;margin-top:4px;color:#777}
+  h2{font-size:15px;color:var(--azul);text-transform:uppercase;letter-spacing:.4px;margin:0 0 10px}
+  #mapa{height:480px;border-radius:8px}
+  .legenda{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;margin-top:8px}
+  .legenda span::before{content:'●';margin-right:4px}
+  .lg-verde::before{color:var(--verde)} .lg-azul::before{color:#3b82c4} .lg-vermelho::before{color:var(--vermelho)} .lg-cinza::before{color:var(--cinza)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 6px;border-bottom:1px solid var(--borda);text-align:left}
+  th{font-size:11px;text-transform:uppercase;color:#555}
+  td.num,th.num{text-align:right}
+  .selo{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap}
+  .s-destaque{background:#e6f4ea;color:var(--verde)} .s-alta{background:#e8f0fe;color:var(--azul)}
+  .s-ok{background:#f1f3f4;color:#444} .s-atencao{background:#fef7e0;color:var(--amarelo)} .s-critico{background:#fdecea;color:var(--vermelho)}
+  .alerta{padding:10px;border-radius:8px;margin-bottom:8px;font-size:13px;border-left:4px solid}
+  .a-critico{background:#fdecea;border-color:var(--vermelho)} .a-atencao{background:#fef7e0;border-color:var(--amarelo)} .a-info{background:#e8f0fe;border-color:var(--azul)}
+  .barras{display:flex;align-items:flex-end;gap:4px;height:120px;margin-top:8px}
+  .barra{flex:1;background:var(--azul);border-radius:3px 3px 0 0;min-height:2px;position:relative}
+  .barra span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:9px;color:#666}
+  .barra b{position:absolute;top:-16px;left:0;right:0;text-align:center;font-size:10px;color:#333}
+  .botoes{display:flex;gap:10px;flex-wrap:wrap}
+  .botoes button{padding:10px 16px;border:0;border-radius:8px;background:var(--azul);color:#fff;font-weight:700;cursor:pointer;font-size:13px}
+  #relatorio{white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:#f8f9fa;border:1px solid var(--borda);border-radius:8px;padding:12px;margin-top:10px;display:none}
+  .duas{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:800px){.duas{grid-template-columns:1fr}}
+  a.form-link{color:#fff;background:var(--verde);padding:8px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>TRACKING DIÁRIO — CAMPANHA ROSÂNGELA REIS</h1>
+  <small>Ipatinga · atualizado <span id="atualizado">—</span></small></div>
+  <a class="form-link" href="lancar.html">+ Lançar atividade</a>
+</header>
+<main>
+
+<div class="card filtros">
+  <strong style="font-size:13px">Período:</strong>
+  <select id="fPeriodo">
+    <option value="hoje">Hoje</option>
+    <option value="ontem">Ontem</option>
+    <option value="7" selected>Últimos 7 dias</option>
+    <option value="30">Últimos 30 dias</option>
+    <option value="tudo">Toda a campanha</option>
+  </select>
+  <select id="fPesquisador"><option value="">Todos os pesquisadores</option></select>
+  <select id="fBairro"><option value="">Todos os bairros</option></select>
+  <select id="fTipo"><option value="">Todos os tipos</option></select>
+  <button id="fLimpar" style="padding:8px 12px;border:1px solid var(--borda);background:#fff;border-radius:8px;cursor:pointer;font-size:13px">Limpar</button>
+</div>
+
+<div class="kpis" id="cards"></div>
+
+<div class="card" style="margin-top:14px">
+  <h2>Mapa de cobertura — onde já foi feito</h2>
+  <div id="mapa"></div>
+  <div class="legenda">
+    <span class="lg-verde">Trabalhado no tracking (novo)</span>
+    <span class="lg-azul">Trabalhado no campo 2025</span>
+    <span class="lg-vermelho">Prioridade ALTA sem atividade</span>
+    <span class="lg-cinza">Sem atividade registrada</span>
+  </div>
+</div>
+
+<div class="duas">
+  <div class="card">
+    <h2>Pessoas alcançadas por dia (14 dias)</h2>
+    <div class="barras" id="grafico"></div>
+    <div style="height:20px"></div>
+  </div>
+  <div class="card">
+    <h2>Alertas</h2>
+    <div id="alertas"><em style="font-size:13px;color:#777">Carregando…</em></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Ranking de pesquisadores — período selecionado</h2>
+  <div style="overflow-x:auto"><table id="ranking">
+    <thead><tr><th>#</th><th>Pesquisador</th><th class="num">Score</th><th>Classificação</th>
+    <th class="num">Pessoas</th><th class="num">Apoiadores</th><th class="num">Lideranças</th>
+    <th class="num">Mobiliz.</th><th class="num">Atividades</th><th class="num">Bairros</th><th class="num">Dias ativos</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+</div>
+
+<div class="card">
+  <h2>Relatórios para WhatsApp</h2>
+  <div class="botoes">
+    <button id="btnDia">📋 Relatório do dia</button>
+    <button id="btnSemana">📋 Relatório da semana</button>
+    <button id="btnCopiar" style="background:var(--verde);display:none">Copiar texto</button>
+  </div>
+  <div id="relatorio"></div>
+</div>
+
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const sb = supabase.createClient(TRACKING_CONFIG.SUPABASE_URL, TRACKING_CONFIG.SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+let LANC=[], COB=[], CFG={}, PESQ=[], mapa=null, circulos=[];
+
+const hojeStr = () => new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+const addDias = (s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const fmt = n => (n||0).toLocaleString('pt-BR');
+
+async function carregar(){
+  const [l,c,cfg,p] = await Promise.all([
+    sb.from('v_tracking_lancamentos').select('*').eq('teste',false).order('data',{ascending:false}).limit(5000),
+    sb.from('v_tracking_cobertura').select('*'),
+    sb.from('v_tracking_config').select('*'),
+    sb.from('v_tracking_pesquisadores').select('id,nome')
+  ]);
+  LANC = l.data||[]; COB = c.data||[]; PESQ = p.data||[];
+  (cfg.data||[]).forEach(r=>CFG[r.chave]=+r.valor);
+  $('atualizado').textContent = new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
+  montarFiltros(); render();
+}
+
+function montarFiltros(){
+  $('fPesquisador').innerHTML = '<option value="">Todos os pesquisadores</option>'+PESQ.map(x=>`<option value="${x.nome}">${x.nome}</option>`).join('');
+  const bairros=[...new Set(COB.map(c=>c.bairro))].sort();
+  $('fBairro').innerHTML = '<option value="">Todos os bairros</option>'+bairros.map(b=>`<option>${b}</option>`).join('');
+  const tipos=[...new Set(LANC.map(l=>l.tipo_atividade))].sort();
+  $('fTipo').innerHTML = '<option value="">Todos os tipos</option>'+tipos.map(t=>`<option>${t}</option>`).join('');
+}
+
+function intervalo(){
+  const h=hojeStr(), p=$('fPeriodo').value;
+  if(p==='hoje') return [h,h];
+  if(p==='ontem'){const o=addDias(h,-1);return [o,o]}
+  if(p==='tudo') return ['2000-01-01',h];
+  return [addDias(h,-(+p-1)),h];
+}
+
+function filtrar(ini,fim){
+  return LANC.filter(l=> l.data>=ini && l.data<=fim
+    && (!$('fPesquisador').value || l.pesquisador===$('fPesquisador').value)
+    && (!$('fBairro').value || l.bairro===$('fBairro').value)
+    && (!$('fTipo').value || l.tipo_atividade===$('fTipo').value));
+}
+
+function soma(rs,c){return rs.reduce((a,r)=>a+(+r[c]||0),0)}
+
+function render(){
+  const [ini,fim]=intervalo(), rs=filtrar(ini,fim);
+  renderCards(rs); renderMapa(); renderGrafico(); renderRanking(rs,ini,fim); renderAlertas();
+}
+
+function renderCards(rs){
+  const h=hojeStr(), o=addDias(h,-1);
+  const hj=filtrar(h,h), on=filtrar(o,o);
+  const metaDia = (CFG.META_PESSOAS_DIA_PESQUISADOR||80) * Math.max(1,new Set(hj.map(r=>r.pesquisador)).size || PESQ.length);
+  const pctMeta = metaDia? Math.round(100*soma(hj,'pessoas_alcancadas')/metaDia) : 0;
+  const cards=[
+    ['Pessoas alcançadas', soma(rs,'pessoas_alcancadas'), `hoje: ${fmt(soma(hj,'pessoas_alcancadas'))} · ontem: ${fmt(soma(on,'pessoas_alcancadas'))}`],
+    ['Apoiadores registrados', soma(rs,'apoiadores_registrados'), `hoje: ${fmt(soma(hj,'apoiadores_registrados'))}`],
+    ['Lideranças contatadas', soma(rs,'liderancas_contatadas'), `hoje: ${fmt(soma(hj,'liderancas_contatadas'))}`],
+    ['Mobilizadores novos', soma(rs,'mobilizadores_novos'), `hoje: ${fmt(soma(hj,'mobilizadores_novos'))}`],
+    ['Atividades', rs.length, `hoje: ${hj.length}`],
+    ['Bairros trabalhados', new Set(rs.map(r=>r.bairro)).size, `de ${COB.length} bairros`],
+    ['Pesquisadores ativos', new Set(rs.map(r=>r.pesquisador)).size, `de ${PESQ.length} cadastrados`],
+    ['Meta do dia', pctMeta+'%', `meta: ${fmt(metaDia)} pessoas`]
+  ];
+  $('cards').innerHTML = cards.map(c=>`<div class="kpi"><div class="v">${typeof c[1]==='number'?fmt(c[1]):c[1]}</div><div class="l">${c[0]}</div><div class="c">${c[2]}</div></div>`).join('');
+}
+
+function corBairro(c){
+  if(c.atividades>0) return '#1a7f37';
+  if(c.apoiadores_campo_2025>0) return '#3b82c4';
+  if((c.prioridade||'').toUpperCase()==='ALTA') return '#c62828';
+  return '#8a919b';
+}
+
+function renderMapa(){
+  if(!mapa){
+    mapa=L.map('mapa').setView([-19.47,-42.53],12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(mapa);
+  }
+  circulos.forEach(c=>mapa.removeLayer(c)); circulos=[];
+  COB.forEach(c=>{
+    if(c.lat==null||c.lng==null) return;
+    const circ=L.circle([c.lat,c.lng],{radius:c.raio_m||400,color:corBairro(c),fillColor:corBairro(c),fillOpacity:.35,weight:2}).addTo(mapa);
+    circ.bindPopup(`<b>${c.bairro}</b><br>
+      Atividades (tracking): ${fmt(c.atividades)}<br>
+      Pessoas alcançadas: ${fmt(c.pessoas_alcancadas)}<br>
+      Apoiadores: ${fmt(c.apoiadores_registrados)} · Lideranças: ${fmt(c.liderancas)}<br>
+      Campo 2025: ${fmt(c.apoiadores_campo_2025)} apoiadores<br>
+      Última atividade: ${c.ultima_atividade? new Date(c.ultima_atividade+'T12:00').toLocaleDateString('pt-BR'):'—'}<br>
+      Meta de votos: ${fmt(c.meta_votos)} · 2022: ${fmt(c.votos_2022)}<br>
+      Prioridade: ${c.prioridade||'MEDIA'}`);
+    circulos.push(circ);
+  });
+}
+
+function renderGrafico(){
+  const h=hojeStr(); const dias=[];
+  for(let i=13;i>=0;i--){const d=addDias(h,-i);dias.push([d,soma(LANC.filter(l=>l.data===d),'pessoas_alcancadas')])}
+  const max=Math.max(1,...dias.map(d=>d[1]));
+  $('grafico').innerHTML = dias.map(([d,v])=>`<div class="barra" style="height:${Math.max(2,100*v/max)}%"><b>${v||''}</b><span>${d.slice(8)}/${d.slice(5,7)}</span></div>`).join('');
+}
+
+function classif(s){
+  if(s>=90) return ['DESTAQUE','s-destaque']; if(s>=75) return ['ALTA PERFORMANCE','s-alta'];
+  if(s>=60) return ['DENTRO DO ESPERADO','s-ok']; if(s>=40) return ['ATENÇÃO','s-atencao'];
+  return ['AÇÃO NECESSÁRIA','s-critico'];
+}
+
+function renderRanking(rs,ini,fim){
+  const dias = Math.max(1, Math.round((new Date(fim)-new Date(ini))/86400000)+1);
+  const porP = {};
+  rs.forEach(r=>{
+    const p=porP[r.pesquisador] ??= {pessoas:0,apoiadores:0,liderancas:0,mobilizadores:0,ativ:0,bairros:new Set(),dias:new Set()};
+    p.pessoas+=r.pessoas_alcancadas; p.apoiadores+=r.apoiadores_registrados;
+    p.liderancas+=r.liderancas_contatadas; p.mobilizadores+=r.mobilizadores_novos;
+    p.ativ++; p.bairros.add(r.bairro); p.dias.add(r.data);
+  });
+  const lista=Object.entries(porP).map(([nome,p])=>({nome,...p,bairros:p.bairros.size,dias:p.dias.size}));
+  const metaP=(CFG.META_PESSOAS_DIA_PESQUISADOR||80)*dias;
+  const metaA=(CFG.META_ATIVIDADES_SEMANA_PESQUISADOR||10)*dias/7;
+  const max=c=>Math.max(1,...lista.map(x=>x[c]));
+  lista.forEach(x=>{
+    const nAlc=Math.min(100,100*x.pessoas/metaP), nAtv=Math.min(100,100*x.ativ/Math.max(1,metaA)),
+      nLid=100*x.liderancas/max('liderancas'), nMob=100*x.mobilizadores/max('mobilizadores'),
+      nCob=100*x.bairros/max('bairros'), nReg=100*x.dias/dias;
+    x.score=Math.min(100,Math.round(
+      nAlc*(CFG.PESO_SCORE_ALCANCE||25)/100 + nAtv*(CFG.PESO_SCORE_ATIVIDADE||20)/100 +
+      nLid*(CFG.PESO_SCORE_LIDERANCA||15)/100 + nMob*(CFG.PESO_SCORE_MOBILIZADOR||15)/100 +
+      nCob*(CFG.PESO_SCORE_TERRITORIO||15)/100 + nReg*(CFG.PESO_SCORE_REGULARIDADE||10)/100));
+  });
+  lista.sort((a,b)=>b.score-a.score);
+  $('ranking').querySelector('tbody').innerHTML = lista.length? lista.map((x,i)=>{
+    const [rot,cls]=classif(x.score);
+    return `<tr><td>${i+1}º</td><td>${x.nome}</td><td class="num"><b>${x.score}</b></td>
+    <td><span class="selo ${cls}">${rot}</span></td>
+    <td class="num">${fmt(x.pessoas)}</td><td class="num">${fmt(x.apoiadores)}</td>
+    <td class="num">${fmt(x.liderancas)}</td><td class="num">${fmt(x.mobilizadores)}</td>
+    <td class="num">${x.ativ}</td><td class="num">${x.bairros}</td><td class="num">${x.dias}</td></tr>`;
+  }).join('') : '<tr><td colspan="11" style="text-align:center;color:#777">Sem lançamentos no período.</td></tr>';
+}
+
+function renderAlertas(){
+  const h=hojeStr(), alertas=[];
+  const hj=LANC.filter(l=>l.data===h);
+  const metaDia=(CFG.META_PESSOAS_DIA_PESQUISADOR||80)*Math.max(1,new Set(hj.map(r=>r.pesquisador)).size||PESQ.length);
+  const pct=metaDia?100*soma(hj,'pessoas_alcancadas')/metaDia:0;
+  if(pct < (CFG.LIMITE_ALERTA_META||60)) alertas.push(['critico',`Meta do dia em ${Math.round(pct)}% (limite: ${CFG.LIMITE_ALERTA_META||60}%).`]);
+  const comLanc=new Set(hj.map(l=>l.pesquisador));
+  const sem=PESQ.filter(p=>!comLanc.has(p.nome));
+  if(sem.length&&sem.length<PESQ.length) alertas.push(['atencao',`${sem.length} pesquisador(es) sem lançamento hoje: ${sem.slice(0,5).map(p=>p.nome).join(', ')}${sem.length>5?'…':''}`]);
+  const limDias=CFG.DIAS_SEM_ATIVIDADE_BAIRRO||2, corte=addDias(h,-limDias);
+  COB.filter(c=>(c.prioridade||'').toUpperCase()==='ALTA'&&(!c.ultima_atividade||c.ultima_atividade<corte))
+    .forEach(c=>alertas.push(['critico',`Bairro prioritário sem atividade há ${limDias}+ dias: ${c.bairro}.`]));
+  const dup=LANC.filter(l=>l.possivel_duplicidade), rev=LANC.filter(l=>l.revisar);
+  if(dup.length) alertas.push(['atencao',`${dup.length} lançamento(s) marcados como POSSÍVEL DUPLICIDADE — revisar.`]);
+  if(rev.length) alertas.push(['atencao',`${rev.length} lançamento(s) com números altos aguardando conferência.`]);
+  const s1=soma(LANC.filter(l=>l.data>=addDias(h,-6)),'pessoas_alcancadas');
+  const s0=soma(LANC.filter(l=>l.data>=addDias(h,-13)&&l.data<addDias(h,-6)),'pessoas_alcancadas');
+  if(s0>0&&s1<s0*0.7) alertas.push(['atencao',`Queda de ${Math.round(100-100*s1/s0)}% no alcance vs. semana anterior.`]);
+  if(!alertas.length) alertas.push(['info','Nenhum alerta ativo. Operação dentro do esperado.']);
+  $('alertas').innerHTML=alertas.map(([t,m])=>`<div class="alerta a-${t}"><b>${t==='critico'?'🔴 CRÍTICO':t==='atencao'?'🟡 ATENÇÃO':'🔵 INFO'}</b> — ${m}</div>`).join('');
+}
+
+function topLista(rs,chave,n=5){
+  const m={}; rs.forEach(r=>m[r[chave]]=(m[r[chave]]||0)+r.pessoas_alcancadas);
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n);
+}
+
+function gerarRelatorio(ini,fim,titulo){
+  const rs=LANC.filter(l=>l.data>=ini&&l.data<=fim);
+  const metaDia=(CFG.META_PESSOAS_DIA_PESQUISADOR||80)*Math.max(1,new Set(rs.map(r=>r.pesquisador)).size||1);
+  const dias=Math.round((new Date(fim)-new Date(ini))/86400000)+1;
+  const meta=metaDia*dias, feito=soma(rs,'pessoas_alcancadas');
+  const demandas=rs.map(r=>r.demandas).filter(Boolean).slice(0,5);
+  const proximas=rs.map(r=>r.proxima_acao).filter(Boolean).slice(0,5);
+  const semAtiv=COB.filter(c=>!rs.some(r=>r.bairro===c.bairro)&&c.meta_votos>0).slice(0,8);
+  let t=`*TRACKING DIÁRIO — CAMPANHA ROSÂNGELA REIS*\n${titulo}\n\n`;
+  t+=`*RESUMO*\n`;
+  t+=`Pessoas alcançadas: ${fmt(feito)}\nApoiadores registrados: ${fmt(soma(rs,'apoiadores_registrados'))}\n`;
+  t+=`Lideranças: ${fmt(soma(rs,'liderancas_contatadas'))}\nMobilizadores: ${fmt(soma(rs,'mobilizadores_novos'))}\n`;
+  t+=`Atividades: ${rs.length}\nBairros trabalhados: ${new Set(rs.map(r=>r.bairro)).size}\n\n`;
+  t+=`*META:* ${fmt(meta)}  ·  *REALIZADO:* ${fmt(feito)}  ·  *ATINGIMENTO:* ${meta?Math.round(100*feito/meta):0}%\n\n`;
+  t+=`*TOP 5 PESQUISADORES* (pessoas alcançadas)\n`+topLista(rs,'pesquisador').map((x,i)=>`${i+1}. ${x[0]} — ${fmt(x[1])}`).join('\n')+'\n\n';
+  t+=`*TOP BAIRROS*\n`+topLista(rs,'bairro').map((x,i)=>`${i+1}. ${x[0]} — ${fmt(x[1])}`).join('\n')+'\n\n';
+  if(semAtiv.length) t+=`*BAIRROS SEM ATIVIDADE NO PERÍODO*\n`+semAtiv.map(c=>`• ${c.bairro}`).join('\n')+'\n\n';
+  if(demandas.length) t+=`*PRINCIPAIS DEMANDAS ENCONTRADAS*\n`+demandas.map(d=>`• ${d}`).join('\n')+'\n\n';
+  if(proximas.length) t+=`*PRIORIDADES PARA O PRÓXIMO DIA*\n`+proximas.map(d=>`• ${d}`).join('\n')+'\n';
+  return t;
+}
+
+$('btnDia').onclick=()=>{const h=hojeStr();mostrarRel(gerarRelatorio(h,h,'Data: '+new Date(h+'T12:00').toLocaleDateString('pt-BR')))};
+$('btnSemana').onclick=()=>{const h=hojeStr(),i=addDias(h,-6);mostrarRel(gerarRelatorio(i,h,`Semana: ${new Date(i+'T12:00').toLocaleDateString('pt-BR')} a ${new Date(h+'T12:00').toLocaleDateString('pt-BR')}`))};
+function mostrarRel(t){$('relatorio').style.display='block';$('relatorio').textContent=t;$('btnCopiar').style.display='inline-block'}
+$('btnCopiar').onclick=async()=>{await navigator.clipboard.writeText($('relatorio').textContent);$('btnCopiar').textContent='✅ Copiado!';setTimeout(()=>$('btnCopiar').textContent='Copiar texto',2000)};
+
+['fPeriodo','fPesquisador','fBairro','fTipo'].forEach(i=>$(i).addEventListener('change',render));
+$('fLimpar').onclick=()=>{['fPesquisador','fBairro','fTipo'].forEach(i=>$(i).value='');$('fPeriodo').value='7';render()};
+carregar();
+setInterval(carregar, 5*60*1000); // atualiza a cada 5 minutos
+</script>
+</body>
+</html>
