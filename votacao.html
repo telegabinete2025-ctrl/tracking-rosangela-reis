@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Votação — Tracking Rosângela Reis</title>
+<style>
+  :root{--azul:#0b5394;--verde:#1a7f37;--amarelo:#b8860b;--vermelho:#c62828;--roxo:#6a4fa3;--fundo:#f2f3f5;--borda:#d9dde3}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--fundo);color:#1c1e21}
+  header{background:var(--azul);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  header h1{margin:0;font-size:18px}
+  header small{opacity:.85}
+  main{max-width:1200px;margin:0 auto;padding:14px}
+  .card{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:14px;margin-bottom:14px}
+  h2{font-size:15px;color:var(--azul);text-transform:uppercase;letter-spacing:.4px;margin:0 0 10px}
+  .filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .filtros select{padding:8px;border:1px solid var(--borda);border-radius:8px;font-size:14px}
+  .aviso{font-size:12px;color:#8a6d1a;background:#fef7e0;border:1px solid #f5e3a3;border-radius:8px;padding:9px;margin-bottom:14px;text-align:center;font-weight:600}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+  .kpi{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:12px;text-align:center}
+  .kpi .v{font-size:30px;font-weight:800;color:var(--azul)}
+  .kpi.verde .v{color:var(--verde)} .kpi.roxo .v{color:var(--roxo)}
+  .kpi .l{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#555;margin-top:2px}
+  .kpi .c{font-size:11px;margin-top:4px;color:#777}
+  .duas{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:800px){.duas{grid-template-columns:1fr}}
+  .fatia{margin-bottom:8px}
+  .fatia .rot{display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px}
+  .fatia .trilho{background:#eef0f3;border-radius:6px;height:18px;overflow:hidden}
+  .fatia .barra{height:100%;border-radius:6px;min-width:2px}
+  .barras{display:flex;align-items:flex-end;gap:3px;height:130px;margin-top:20px}
+  .bcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;height:100%}
+  .bcol .b{width:100%;background:#c9d6e8;border-radius:3px 3px 0 0;min-height:2px}
+  .bcol .mm{position:absolute;width:100%;height:3px;background:var(--verde);left:0}
+  .bcol span{position:absolute;bottom:-17px;font-size:9px;color:#666}
+  .bcol b{position:absolute;top:-16px;font-size:10px;color:#333}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:7px 6px;border-bottom:1px solid var(--borda);text-align:left}
+  th{font-size:11px;text-transform:uppercase;color:#555}
+  td.num,th.num{text-align:right}
+  a.form-link{color:#fff;background:var(--verde);padding:8px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700}
+  a.voltar{color:#fff;opacity:.9;font-size:13px;text-decoration:none;margin-right:10px}
+  .nota{font-size:11px;color:#777;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>🗳️ VOTAÇÃO — TRACKING DIÁRIO</h1>
+  <small>Ipatinga · intenção de voto espontânea · atualizado <span id="atualizado">—</span></small></div>
+  <div><a class="voltar" href="index.html">← Painel de campo</a>
+  <a class="form-link" href="pesquisa.html">+ Nova entrevista</a></div>
+</header>
+<main>
+<div class="aviso">⚠️ USO EXCLUSIVAMENTE INTERNO DA COORDENAÇÃO — a divulgação pública destes números (inclusive em grupos de WhatsApp) exige registro prévio no TSE com 5 dias de antecedência (Lei 9.504/97, art. 33).</div>
+
+<div class="card filtros">
+  <strong style="font-size:13px">Período:</strong>
+  <select id="fPeriodo">
+    <option value="hoje">Hoje</option>
+    <option value="7" selected>Últimos 7 dias</option>
+    <option value="14">Últimos 14 dias</option>
+    <option value="30">Últimos 30 dias</option>
+    <option value="tudo">Toda a campanha</option>
+  </select>
+  <select id="fBairro"><option value="">Todos os bairros</option></select>
+  <select id="fPesquisador"><option value="">Todos os pesquisadores</option></select>
+</div>
+
+<div class="kpis" id="cards"></div>
+
+<div class="duas" style="margin-top:14px">
+  <div class="card">
+    <h2>Deputado Federal — período selecionado</h2>
+    <div id="gradeFederal"></div>
+    <div class="nota" id="notaFederal"></div>
+  </div>
+  <div class="card">
+    <h2>Deputado Estadual — período selecionado</h2>
+    <div id="gradeEstadual"></div>
+    <div class="nota" id="notaEstadual"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Evolução — % Rosângela (federal) por dia · linha verde = média móvel 3 dias</h2>
+  <div class="barras" id="grafico"></div>
+  <div style="height:20px"></div>
+  <div class="nota">Barras: % do dia (dias com poucas entrevistas oscilam muito). Linha verde: média móvel de 3 dias — é ela que indica a tendência.</div>
+</div>
+
+<div class="duas">
+  <div class="card">
+    <h2>Por bairro</h2>
+    <div style="overflow-x:auto"><table id="tBairros">
+      <thead><tr><th>Bairro</th><th class="num">Entrevistas</th><th class="num">% Rosângela</th><th class="num">% Andrade</th><th class="num">% Márcio</th><th class="num">% Indecisos (fed)</th></tr></thead>
+      <tbody></tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Por perfil</h2>
+    <div style="overflow-x:auto"><table id="tPerfil">
+      <thead><tr><th>Perfil</th><th class="num">Entrevistas</th><th class="num">% Rosângela</th><th class="num">% Andrade</th><th class="num">% Márcio</th></tr></thead>
+      <tbody></tbody></table></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Relatório para a coordenação</h2>
+  <button id="btnRel" style="padding:10px 16px;border:0;border-radius:8px;background:var(--azul);color:#fff;font-weight:700;cursor:pointer;font-size:13px">📋 Gerar resumo do período</button>
+  <button id="btnCopiar" style="padding:10px 16px;border:0;border-radius:8px;background:var(--verde);color:#fff;font-weight:700;cursor:pointer;font-size:13px;display:none">Copiar</button>
+  <div id="relatorio" style="white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:#f8f9fa;border:1px solid var(--borda);border-radius:8px;padding:12px;margin-top:10px;display:none"></div>
+</div>
+
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const sb = supabase.createClient(TRACKING_CONFIG.SUPABASE_URL, TRACKING_CONFIG.SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+let ENT=[];
+const hojeStr = () => new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+const addDias=(s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const fmt=n=>(n||0).toLocaleString('pt-BR');
+const pct=(a,b)=>b? (100*a/b) : 0;
+const pf=(a,b)=>b? (100*a/b).toFixed(1).replace('.',',')+'%' : '—';
+const margem=(p,n)=>n? (1.96*Math.sqrt(p*(1-p)/n)*100).toFixed(1).replace('.',',') : '—';
+
+async function carregar(){
+  const r = await sb.from('v_tracking_entrevistas').select('*').eq('teste',false).order('data',{ascending:false}).limit(20000);
+  ENT = r.data||[];
+  $('atualizado').textContent = new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
+  const bairros=[...new Set(ENT.map(e=>e.bairro))].sort();
+  $('fBairro').innerHTML='<option value="">Todos os bairros</option>'+bairros.map(b=>`<option>${b}</option>`).join('');
+  const pesq=[...new Set(ENT.map(e=>e.pesquisador))].sort();
+  $('fPesquisador').innerHTML='<option value="">Todos os pesquisadores</option>'+pesq.map(p=>`<option>${p}</option>`).join('');
+  render();
+}
+
+function intervalo(){
+  const h=hojeStr(), p=$('fPeriodo').value;
+  if(p==='hoje') return [h,h];
+  if(p==='tudo') return ['2000-01-01',h];
+  return [addDias(h,-(+p-1)),h];
+}
+function filtrar(ini,fim){
+  return ENT.filter(e=> e.data>=ini && e.data<=fim
+    && (!$('fBairro').value || e.bairro===$('fBairro').value)
+    && (!$('fPesquisador').value || e.pesquisador===$('fPesquisador').value));
+}
+const conta=(rs,c,v)=>rs.filter(r=>r[c]===v).length;
+
+function render(){
+  const [ini,fim]=intervalo(), rs=filtrar(ini,fim), n=rs.length;
+  const h=hojeStr(), nHoje=filtrar(h,h).length;
+  const ros=conta(rs,'voto_federal','ROSANGELA_2215'), and_=conta(rs,'voto_estadual','ANDRADE_25500'), mar=conta(rs,'voto_estadual','MARCIO_25800');
+  const pR=pct(ros,n)/100;
+  $('cards').innerHTML = [
+    `<div class="kpi"><div class="v">${fmt(n)}</div><div class="l">Entrevistas no período</div><div class="c">hoje: ${fmt(nHoje)}</div></div>`,
+    `<div class="kpi verde"><div class="v">${pf(ros,n)}</div><div class="l">Rosângela — Federal</div><div class="c">±${margem(pR,n)} p.p. · ${fmt(ros)} citações</div></div>`,
+    `<div class="kpi roxo"><div class="v">${pf(and_,n)}</div><div class="l">Andrade — Estadual</div><div class="c">${fmt(and_)} citações</div></div>`,
+    `<div class="kpi roxo"><div class="v">${pf(mar,n)}</div><div class="l">Márcio Lima — Estadual</div><div class="c">${fmt(mar)} citações</div></div>`,
+    `<div class="kpi"><div class="v">${pf(conta(rs,'voto_federal','INDECISO'),n)}</div><div class="l">Indecisos — Federal</div><div class="c">oportunidade de convencimento</div></div>`
+  ].join('');
+  grade('gradeFederal', rs, 'voto_federal', [['ROSANGELA_2215','Rosângela Reis','#1a7f37'],['OUTRO','Outro candidato','#8a919b'],['INDECISO','Não sabe / indeciso','#b8860b'],['BRANCO_NULO','Branco / nulo','#555'],['NAO_RESPONDEU','Não respondeu','#c0c5cc']]);
+  grade('gradeEstadual', rs, 'voto_estadual', [['ANDRADE_25500','Andrade 25500','#6a4fa3'],['MARCIO_25800','Márcio Lima 25800','#0b5394'],['OUTRO','Outro candidato','#8a919b'],['INDECISO','Não sabe / indeciso','#b8860b'],['BRANCO_NULO','Branco / nulo','#555'],['NAO_RESPONDEU','Não respondeu','#c0c5cc']]);
+  $('notaFederal').textContent = n? `n = ${fmt(n)} entrevistas · margem de erro ±${margem(pR,n)} p.p. (95% de confiança) para a proporção da Rosângela.` : 'Sem entrevistas no período.';
+  $('notaEstadual').textContent = n? `n = ${fmt(n)} entrevistas. Amostras pequenas oscilam — acompanhe a tendência, não o dia isolado.` : '';
+  grafico(); porBairro(rs); porPerfil(rs);
+}
+
+function grade(el, rs, campo, itens){
+  const n=rs.length;
+  $(el).innerHTML = itens.map(([v,rot,cor])=>{
+    const q=conta(rs,campo,v);
+    return `<div class="fatia"><div class="rot"><span>${rot}</span><b>${pf(q,n)} (${fmt(q)})</b></div>
+      <div class="trilho"><div class="barra" style="width:${pct(q,n)}%;background:${cor}"></div></div></div>`;
+  }).join('');
+}
+
+function grafico(){
+  const h=hojeStr(), dias=[];
+  for(let i=13;i>=0;i--){
+    const d=addDias(h,-i), rs=ENT.filter(e=>e.data===d);
+    dias.push({d, n:rs.length, p: rs.length? pct(conta(rs,'voto_federal','ROSANGELA_2215'),rs.length):null});
+  }
+  // média móvel 3 dias (janela agregada, não média das médias)
+  dias.forEach((x,i)=>{
+    const jan=dias.slice(Math.max(0,i-2),i+1);
+    const nT=jan.reduce((a,y)=>a+y.n,0);
+    const cT=jan.reduce((a,y)=>a+(y.n&&y.p!=null? y.p*y.n/100:0),0);
+    x.mm = nT? 100*cT/nT : null;
+  });
+  const max=Math.max(10,...dias.map(x=>x.p||0),...dias.map(x=>x.mm||0));
+  $('grafico').innerHTML = dias.map(x=>`
+    <div class="bcol">
+      ${x.p!=null? `<b>${x.p.toFixed(0)}%</b>`:''}
+      <div class="b" style="height:${x.p!=null? Math.max(2,100*x.p/max):2}%"></div>
+      ${x.mm!=null? `<div class="mm" style="bottom:${100*x.mm/max}%"></div>`:''}
+      <span>${x.d.slice(8)}/${x.d.slice(5,7)}</span>
+    </div>`).join('');
+}
+
+function porBairro(rs){
+  const m={};
+  rs.forEach(e=>{(m[e.bairro] ??= []).push(e)});
+  const linhas=Object.entries(m).sort((a,b)=>b[1].length-a[1].length).map(([bairro,es])=>{
+    const n=es.length;
+    return `<tr><td>${bairro}</td><td class="num">${n}</td>
+      <td class="num">${pf(conta(es,'voto_federal','ROSANGELA_2215'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_estadual','ANDRADE_25500'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_estadual','MARCIO_25800'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_federal','INDECISO'),n)}</td></tr>`;
+  });
+  $('tBairros').querySelector('tbody').innerHTML = linhas.join('')||'<tr><td colspan="6" style="text-align:center;color:#777">Sem entrevistas.</td></tr>';
+}
+
+function porPerfil(rs){
+  const grupos=[['Mulheres',e=>e.sexo==='F'],['Homens',e=>e.sexo==='M'],
+    ['16–24',e=>e.faixa_etaria==='16-24'],['25–34',e=>e.faixa_etaria==='25-34'],['35–44',e=>e.faixa_etaria==='35-44'],
+    ['45–59',e=>e.faixa_etaria==='45-59'],['60+',e=>e.faixa_etaria==='60+']];
+  $('tPerfil').querySelector('tbody').innerHTML = grupos.map(([rot,f])=>{
+    const es=rs.filter(f), n=es.length;
+    return `<tr><td>${rot}</td><td class="num">${n}</td>
+      <td class="num">${pf(conta(es,'voto_federal','ROSANGELA_2215'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_estadual','ANDRADE_25500'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_estadual','MARCIO_25800'),n)}</td></tr>`;
+  }).join('');
+}
+
+$('btnRel').onclick=()=>{
+  const [ini,fim]=intervalo(), rs=filtrar(ini,fim), n=rs.length;
+  const ros=conta(rs,'voto_federal','ROSANGELA_2215');
+  let t=`TRACKING DE VOTAÇÃO — USO INTERNO (não divulgar)\nPeríodo: ${new Date(ini+'T12:00').toLocaleDateString('pt-BR')} a ${new Date(fim+'T12:00').toLocaleDateString('pt-BR')}\n\n`;
+  t+=`Entrevistas: ${fmt(n)}\n\nDEPUTADO FEDERAL (espontânea)\n`;
+  t+=`Rosângela Reis: ${pf(ros,n)} (±${margem(pct(ros,n)/100,n)} p.p.)\nOutros: ${pf(conta(rs,'voto_federal','OUTRO'),n)}\nIndecisos: ${pf(conta(rs,'voto_federal','INDECISO'),n)}\nBranco/nulo: ${pf(conta(rs,'voto_federal','BRANCO_NULO'),n)}\n\n`;
+  t+=`DEPUTADO ESTADUAL (espontânea)\nAndrade 25500: ${pf(conta(rs,'voto_estadual','ANDRADE_25500'),n)}\nMárcio Lima 25800: ${pf(conta(rs,'voto_estadual','MARCIO_25800'),n)}\nOutros: ${pf(conta(rs,'voto_estadual','OUTRO'),n)}\nIndecisos: ${pf(conta(rs,'voto_estadual','INDECISO'),n)}\n`;
+  $('relatorio').style.display='block'; $('relatorio').textContent=t; $('btnCopiar').style.display='inline-block';
+};
+$('btnCopiar').onclick=async()=>{await navigator.clipboard.writeText($('relatorio').textContent);$('btnCopiar').textContent='✅ Copiado';setTimeout(()=>$('btnCopiar').textContent='Copiar',2000)};
+
+['fPeriodo','fBairro','fPesquisador'].forEach(i=>$(i).addEventListener('change',render));
+carregar();
+setInterval(carregar, 5*60*1000);
+</script>
+</body>
+</html>
