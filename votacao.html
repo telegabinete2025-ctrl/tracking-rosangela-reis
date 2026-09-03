@@ -82,6 +82,22 @@
   </div>
 </div>
 
+<div class="duas">
+  <div class="card">
+    <h2>Nomes citados em "Outro" — Federal</h2>
+    <div style="overflow-x:auto"><table id="tOutrosFed">
+      <thead><tr><th>Nome citado</th><th class="num">Citações</th><th class="num">% do período</th></tr></thead>
+      <tbody></tbody></table></div>
+    <div class="nota">Agrupamento automático: variações de maiúsculas e acentos contam como o mesmo nome. Um nome muito citado aqui merece virar botão fixo — é só pedir.</div>
+  </div>
+  <div class="card">
+    <h2>Nomes citados em "Outro" — Estadual</h2>
+    <div style="overflow-x:auto"><table id="tOutrosEst">
+      <thead><tr><th>Nome citado</th><th class="num">Citações</th><th class="num">% do período</th></tr></thead>
+      <tbody></tbody></table></div>
+  </div>
+</div>
+
 <div class="card">
   <h2>Evolução — % Rosângela (federal) por dia · linha verde = média móvel 3 dias</h2>
   <div class="barras" id="grafico"></div>
@@ -165,7 +181,28 @@ function render(){
   grade('gradeEstadual', rs, 'voto_estadual', [['ANDRADE_25500','Andrade 25500','#6a4fa3'],['MARCIO_25800','Márcio Lima 25800','#0b5394'],['DANIEL_DO_BEM','Daniel do Bem','#2e8b74'],['HELENO_HOSPITAL','Heleno do Hospital','#b3547e'],['OUTRO','Outro candidato','#8a919b'],['INDECISO','Não sabe / indeciso','#b8860b'],['BRANCO_NULO','Branco / nulo','#555'],['NAO_RESPONDEU','Não respondeu','#c0c5cc']]);
   $('notaFederal').textContent = n? `n = ${fmt(n)} entrevistas · margem de erro ±${margem(pR,n)} p.p. (95% de confiança) para a proporção da Rosângela.` : 'Sem entrevistas no período.';
   $('notaEstadual').textContent = n? `n = ${fmt(n)} entrevistas. Amostras pequenas oscilam — acompanhe a tendência, não o dia isolado.` : '';
-  grafico(); porBairro(rs); porPerfil(rs);
+  grafico(); porBairro(rs); porPerfil(rs); porOutros(rs);
+}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const normNome = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').trim().replace(/\s+/g,' ').toLowerCase();
+
+function agruparOutros(rs, campo, campoOutro){
+  const m = {};
+  rs.filter(e => e[campo]==='OUTRO' && e[campoOutro] && e[campoOutro].trim()).forEach(e => {
+    const k = normNome(e[campoOutro]); if(!k) return;
+    (m[k] ??= {n:0, exemplo:e[campoOutro].trim()}).n++;
+  });
+  return Object.values(m).sort((a,b)=>b.n-a.n).slice(0,15);
+}
+
+function porOutros(rs){
+  const n = rs.length;
+  const tabela = lista => lista.length
+    ? lista.map(v=>`<tr><td>${esc(v.exemplo)}</td><td class="num">${v.n}</td><td class="num">${pf(v.n,n)}</td></tr>`).join('')
+    : '<tr><td colspan="3" style="text-align:center;color:#777">Nenhum nome anotado em "Outro" no período.</td></tr>';
+  $('tOutrosFed').querySelector('tbody').innerHTML = tabela(agruparOutros(rs,'voto_federal','voto_federal_outro'));
+  $('tOutrosEst').querySelector('tbody').innerHTML = tabela(agruparOutros(rs,'voto_estadual','voto_estadual_outro'));
 }
 
 function grade(el, rs, campo, itens){
@@ -234,6 +271,10 @@ $('btnRel').onclick=()=>{
   t+=`Entrevistas: ${fmt(n)}\n\nDEPUTADO FEDERAL (espontânea)\n`;
   t+=`Rosângela Reis: ${pf(ros,n)} (±${margem(pct(ros,n)/100,n)} p.p.)\nMarcus Vinicius: ${pf(conta(rs,'voto_federal','MARCUS_VINICIUS'),n)}\nVinicius Diniz: ${pf(conta(rs,'voto_federal','VINICIUS_DINIZ'),n)}\nOutros: ${pf(conta(rs,'voto_federal','OUTRO'),n)}\nIndecisos: ${pf(conta(rs,'voto_federal','INDECISO'),n)}\nBranco/nulo: ${pf(conta(rs,'voto_federal','BRANCO_NULO'),n)}\n\n`;
   t+=`DEPUTADO ESTADUAL (espontânea)\nAndrade 25500: ${pf(conta(rs,'voto_estadual','ANDRADE_25500'),n)}\nMárcio Lima 25800: ${pf(conta(rs,'voto_estadual','MARCIO_25800'),n)}\nDaniel do Bem: ${pf(conta(rs,'voto_estadual','DANIEL_DO_BEM'),n)}\nHeleno do Hospital: ${pf(conta(rs,'voto_estadual','HELENO_HOSPITAL'),n)}\nOutros: ${pf(conta(rs,'voto_estadual','OUTRO'),n)}\nIndecisos: ${pf(conta(rs,'voto_estadual','INDECISO'),n)}\n`;
+  const oF = agruparOutros(rs,'voto_federal','voto_federal_outro').slice(0,5);
+  const oE = agruparOutros(rs,'voto_estadual','voto_estadual_outro').slice(0,5);
+  if(oF.length) t+=`\nMais citados em "Outro" (federal): `+oF.map(v=>`${v.exemplo} (${v.n})`).join(', ')+`\n`;
+  if(oE.length) t+=`Mais citados em "Outro" (estadual): `+oE.map(v=>`${v.exemplo} (${v.n})`).join(', ')+`\n`;
   $('relatorio').style.display='block'; $('relatorio').textContent=t; $('btnCopiar').style.display='inline-block';
 };
 $('btnCopiar').onclick=async()=>{await navigator.clipboard.writeText($('relatorio').textContent);$('btnCopiar').textContent='✅ Copiado';setTimeout(()=>$('btnCopiar').textContent='Copiar',2000)};
