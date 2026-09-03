@@ -109,13 +109,13 @@
   <div class="card">
     <h2>Por bairro</h2>
     <div style="overflow-x:auto"><table id="tBairros">
-      <thead><tr><th>Bairro</th><th class="num">Entrevistas</th><th class="num">% Rosângela</th><th class="num">% Andrade</th><th class="num">% Márcio</th><th class="num">% Indecisos (fed)</th></tr></thead>
+      <thead><tr><th>Bairro</th><th class="num">Entrev.</th><th class="num">Rosângela</th><th class="num">Marcus V.</th><th class="num">Vinicius D.</th><th class="num">Andrade</th><th class="num">Márcio</th><th class="num">Daniel</th><th class="num">Heleno</th><th class="num">Indec. (fed)</th></tr></thead>
       <tbody></tbody></table></div>
   </div>
   <div class="card">
     <h2>Por perfil</h2>
     <div style="overflow-x:auto"><table id="tPerfil">
-      <thead><tr><th>Perfil</th><th class="num">Entrevistas</th><th class="num">% Rosângela</th><th class="num">% Andrade</th><th class="num">% Márcio</th></tr></thead>
+      <thead><tr><th>Perfil</th><th class="num">Entrev.</th><th class="num">Rosângela</th><th class="num">Marcus V.</th><th class="num">Vinicius D.</th><th class="num">Andrade</th><th class="num">Márcio</th><th class="num">Daniel</th><th class="num">Heleno</th></tr></thead>
       <tbody></tbody></table></div>
   </div>
 </div>
@@ -168,13 +168,21 @@ const conta=(rs,c,v)=>rs.filter(r=>r[c]===v).length;
 function render(){
   const [ini,fim]=intervalo(), rs=filtrar(ini,fim), n=rs.length;
   const h=hojeStr(), nHoje=filtrar(h,h).length;
-  const ros=conta(rs,'voto_federal','ROSANGELA_2215'), and_=conta(rs,'voto_estadual','ANDRADE_25500'), mar=conta(rs,'voto_estadual','MARCIO_25800');
+  const ros=conta(rs,'voto_federal','ROSANGELA_2215');
   const pR=pct(ros,n)/100;
+  const cardCand = (campo,cod,rot,disputa,cls) => {
+    const q=conta(rs,campo,cod);
+    return `<div class="kpi ${cls||''}"><div class="v">${pf(q,n)}</div><div class="l">${rot} — ${disputa}</div><div class="c">${fmt(q)} citações</div></div>`;
+  };
   $('cards').innerHTML = [
     `<div class="kpi"><div class="v">${fmt(n)}</div><div class="l">Entrevistas no período</div><div class="c">hoje: ${fmt(nHoje)}</div></div>`,
     `<div class="kpi verde"><div class="v">${pf(ros,n)}</div><div class="l">Rosângela — Federal</div><div class="c">±${margem(pR,n)} p.p. · ${fmt(ros)} citações</div></div>`,
-    `<div class="kpi roxo"><div class="v">${pf(and_,n)}</div><div class="l">Andrade — Estadual</div><div class="c">${fmt(and_)} citações</div></div>`,
-    `<div class="kpi roxo"><div class="v">${pf(mar,n)}</div><div class="l">Márcio Lima — Estadual</div><div class="c">${fmt(mar)} citações</div></div>`,
+    cardCand('voto_federal','MARCUS_VINICIUS','Marcus Vinicius','Federal'),
+    cardCand('voto_federal','VINICIUS_DINIZ','Vinicius Diniz','Federal'),
+    cardCand('voto_estadual','ANDRADE_25500','Andrade','Estadual','roxo'),
+    cardCand('voto_estadual','MARCIO_25800','Márcio Lima','Estadual','roxo'),
+    cardCand('voto_estadual','DANIEL_DO_BEM','Daniel do Bem','Estadual','roxo'),
+    cardCand('voto_estadual','HELENO_HOSPITAL','Heleno do Hospital','Estadual','roxo'),
     `<div class="kpi"><div class="v">${pf(conta(rs,'voto_federal','INDECISO'),n)}</div><div class="l">Indecisos — Federal</div><div class="c">oportunidade de convencimento</div></div>`
   ].join('');
   grade('gradeFederal', rs, 'voto_federal', [['ROSANGELA_2215','Rosângela Reis','#1a7f37'],['MARCUS_VINICIUS','Marcus Vinicius','#b3623a'],['VINICIUS_DINIZ','Vinicius Diniz','#3a7f9b'],['OUTRO','Outro candidato','#8a919b'],['INDECISO','Não sabe / indeciso','#b8860b'],['BRANCO_NULO','Branco / nulo','#555'],['NAO_RESPONDEU','Não respondeu','#c0c5cc']]);
@@ -244,11 +252,15 @@ function porBairro(rs){
     const n=es.length;
     return `<tr><td>${bairro}</td><td class="num">${n}</td>
       <td class="num">${pf(conta(es,'voto_federal','ROSANGELA_2215'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_federal','MARCUS_VINICIUS'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_federal','VINICIUS_DINIZ'),n)}</td>
       <td class="num">${pf(conta(es,'voto_estadual','ANDRADE_25500'),n)}</td>
       <td class="num">${pf(conta(es,'voto_estadual','MARCIO_25800'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_estadual','DANIEL_DO_BEM'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_estadual','HELENO_HOSPITAL'),n)}</td>
       <td class="num">${pf(conta(es,'voto_federal','INDECISO'),n)}</td></tr>`;
   });
-  $('tBairros').querySelector('tbody').innerHTML = linhas.join('')||'<tr><td colspan="6" style="text-align:center;color:#777">Sem entrevistas.</td></tr>';
+  $('tBairros').querySelector('tbody').innerHTML = linhas.join('')||'<tr><td colspan="10" style="text-align:center;color:#777">Sem entrevistas.</td></tr>';
 }
 
 function porPerfil(rs){
@@ -259,8 +271,12 @@ function porPerfil(rs){
     const es=rs.filter(f), n=es.length;
     return `<tr><td>${rot}</td><td class="num">${n}</td>
       <td class="num">${pf(conta(es,'voto_federal','ROSANGELA_2215'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_federal','MARCUS_VINICIUS'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_federal','VINICIUS_DINIZ'),n)}</td>
       <td class="num">${pf(conta(es,'voto_estadual','ANDRADE_25500'),n)}</td>
-      <td class="num">${pf(conta(es,'voto_estadual','MARCIO_25800'),n)}</td></tr>`;
+      <td class="num">${pf(conta(es,'voto_estadual','MARCIO_25800'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_estadual','DANIEL_DO_BEM'),n)}</td>
+      <td class="num">${pf(conta(es,'voto_estadual','HELENO_HOSPITAL'),n)}</td></tr>`;
   }).join('');
 }
 
