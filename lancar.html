@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Lançar Atividade — Tracking Rosângela Reis</title>
+<style>
+  :root{--verde:#1a7f37;--vermelho:#c62828;--azul:#0b5394;--cinza:#f2f3f5;--borda:#d9dde3}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--cinza);color:#1c1e21}
+  header{background:var(--azul);color:#fff;padding:14px 16px}
+  header h1{margin:0;font-size:17px;font-weight:700}
+  header p{margin:2px 0 0;font-size:12px;opacity:.85}
+  main{max-width:560px;margin:0 auto;padding:14px 12px 60px}
+  .card{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:14px;margin-bottom:12px}
+  label{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
+  label .ob{color:var(--vermelho)}
+  input,select,textarea{width:100%;padding:11px;border:1px solid var(--borda);border-radius:8px;font-size:16px;background:#fff}
+  textarea{min-height:64px;resize:vertical}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .num-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .num-grid label{margin-top:0}
+  h2{font-size:14px;margin:0 0 4px;color:var(--azul);text-transform:uppercase;letter-spacing:.4px}
+  button{width:100%;padding:15px;border:0;border-radius:10px;background:var(--verde);color:#fff;font-size:17px;font-weight:700;cursor:pointer}
+  button:disabled{opacity:.6}
+  #msg{margin-top:12px;padding:12px;border-radius:8px;font-size:14px;display:none}
+  #msg.ok{display:block;background:#e6f4ea;color:var(--verde);border:1px solid #b7dfc2}
+  #msg.erro{display:block;background:#fdecea;color:var(--vermelho);border:1px solid #f5c6c2}
+  a.dash{display:block;text-align:center;margin-top:14px;font-size:13px;color:var(--azul)}
+</style>
+</head>
+<body>
+<header>
+  <h1>TRACKING DIÁRIO — CAMPANHA ROSÂNGELA REIS</h1>
+  <p>Lançamento de atividade de campo · Ipatinga</p>
+</header>
+<main>
+<form id="f">
+  <div class="card">
+    <h2>Identificação</h2>
+    <label>Pesquisador(a) <span class="ob">*</span></label>
+    <select id="pesquisador" required><option value="">Carregando…</option></select>
+    <div class="grid2">
+      <div><label>Data <span class="ob">*</span></label><input type="date" id="data" required></div>
+      <div><label>Bairro <span class="ob">*</span></label>
+        <select id="bairro" required><option value="">Carregando…</option></select></div>
+    </div>
+    <label>Tipo de atividade <span class="ob">*</span></label>
+    <select id="tipo" required></select>
+    <div class="grid2">
+      <div><label>Hora inicial</label><input type="time" id="hini"></div>
+      <div><label>Hora final</label><input type="time" id="hfim"></div>
+    </div>
+    <label>Pessoas na equipe <span class="ob">*</span></label>
+    <input type="number" id="equipe" min="1" value="1" required>
+  </div>
+
+  <div class="card">
+    <h2>Resultados</h2>
+    <div class="num-grid">
+      <div><label>Pessoas alcançadas <span class="ob">*</span></label><input type="number" id="pessoas" min="0" value="0" required></div>
+      <div><label>Novos apoiadores</label><input type="number" id="apoiadores" min="0" value="0"></div>
+      <div><label>Lideranças contatadas</label><input type="number" id="liderancas" min="0" value="0"></div>
+      <div><label>Novos mobilizadores</label><input type="number" id="mobilizadores" min="0" value="0"></div>
+      <div><label>Material distribuído</label><input type="number" id="material" min="0" value="0"></div>
+      <div><label>Visitas</label><input type="number" id="visitas" min="0" value="0"></div>
+      <div><label>Reuniões</label><input type="number" id="reunioes" min="0" value="0"></div>
+      <div><label>Eventos</label><input type="number" id="eventos" min="0" value="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Relato</h2>
+    <label>Principais demandas encontradas</label><textarea id="demandas"></textarea>
+    <label>Problemas encontrados</label><textarea id="problemas"></textarea>
+    <label>Próxima ação necessária</label><textarea id="proxima"></textarea>
+    <label>Observações gerais</label><textarea id="obs"></textarea>
+    <label>Link de fotos (Drive, álbum, etc.)</label><input type="url" id="fotos" placeholder="https://…">
+  </div>
+
+  <button id="btn" type="submit">ENVIAR LANÇAMENTO</button>
+  <div id="msg"></div>
+  <a class="dash" href="index.html">Ver painel da coordenação →</a>
+</form>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const sb = supabase.createClient(TRACKING_CONFIG.SUPABASE_URL, TRACKING_CONFIG.SUPABASE_KEY);
+const TIPOS = ['PESQUISA','VISITA','REUNIÃO','CAMINHADA','CORPO A CORPO','EVENTO','ADESIVAÇO','PANFLETAGEM','ENCONTRO COM LIDERANÇA','REUNIÃO COM EQUIPE','VISITA COMUNITÁRIA','VISITA INSTITUCIONAL','REUNIÃO SETORIAL','MOBILIZAÇÃO','AÇÃO DE RUA','OUTROS'];
+const $ = id => document.getElementById(id);
+
+function hojeLocal(){
+  return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+}
+
+async function init(){
+  $('data').value = hojeLocal(); $('data').max = hojeLocal();
+  $('tipo').innerHTML = TIPOS.map(t=>`<option>${t}</option>`).join('');
+  const [p,b] = await Promise.all([
+    sb.from('v_tracking_pesquisadores').select('id,nome'),
+    sb.from('v_tracking_bairros').select('nome')
+  ]);
+  if(p.error||b.error){ mostrar('erro','Falha ao carregar cadastros. Verifique a internet e recarregue.'); return; }
+  $('pesquisador').innerHTML = '<option value="">Selecione…</option>'+p.data.map(x=>`<option value="${x.id}">${x.nome}</option>`).join('');
+  $('bairro').innerHTML = '<option value="">Selecione…</option>'+b.data.map(x=>`<option>${x.nome}</option>`).join('');
+  const ult = localStorage.getItem('pesquisador_id');
+  if(ult) $('pesquisador').value = ult;
+}
+
+function mostrar(tipo,txt){ const m=$('msg'); m.className=tipo; m.textContent=txt; }
+
+$('f').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const hini=$('hini').value, hfim=$('hfim').value;
+  if(hini&&hfim&&hfim<=hini){ mostrar('erro','Horário final deve ser depois do inicial.'); return; }
+  $('btn').disabled=true; mostrar('','');
+  const reg = {
+    data: $('data').value,
+    pesquisador_id: $('pesquisador').value,
+    bairro: $('bairro').value,
+    tipo_atividade: $('tipo').value,
+    hora_inicio: hini||null, hora_fim: hfim||null,
+    equipe:+$('equipe').value,
+    pessoas_alcancadas:+$('pessoas').value,
+    apoiadores_registrados:+$('apoiadores').value,
+    liderancas_contatadas:+$('liderancas').value,
+    mobilizadores_novos:+$('mobilizadores').value,
+    material_distribuido:+$('material').value,
+    visitas:+$('visitas').value, reunioes:+$('reunioes').value, eventos:+$('eventos').value,
+    demandas:$('demandas').value||null, problemas:$('problemas').value||null,
+    proxima_acao:$('proxima').value||null, observacoes:$('obs').value||null,
+    link_fotos:$('fotos').value||null
+  };
+  const {error} = await sb.from('tracking_lancamentos').insert(reg);
+  $('btn').disabled=false;
+  if(error){ mostrar('erro','Não foi possível enviar: '+error.message); return; }
+  try{ localStorage.setItem('pesquisador_id', reg.pesquisador_id); }catch(_){}
+  mostrar('ok','✅ Lançamento registrado! Obrigado pelo trabalho.');
+  ['pessoas','apoiadores','liderancas','mobilizadores','material','visitas','reunioes','eventos'].forEach(i=>$(i).value=0);
+  ['demandas','problemas','proxima','obs','fotos','hini','hfim'].forEach(i=>$(i).value='');
+});
+init();
+</script>
+</body>
+</html>
