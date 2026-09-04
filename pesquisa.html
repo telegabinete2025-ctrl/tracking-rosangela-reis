@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Pesquisa de Voto — Tracking Rosângela Reis</title>
+<title>Pesquisa de Voto — Ipatinga</title>
 <style>
   :root{--verde:#1a7f37;--vermelho:#c62828;--azul:#0b5394;--cinza:#f2f3f5;--borda:#d9dde3;--sel:#0b5394}
   *{box-sizing:border-box}
@@ -16,20 +16,20 @@
   h2{font-size:13px;margin:0 0 8px;color:var(--azul);text-transform:uppercase;letter-spacing:.4px}
   label{display:block;font-size:12px;font-weight:600;margin:8px 0 4px}
   select,input{width:100%;padding:10px;border:1px solid var(--borda);border-radius:8px;font-size:16px;background:#fff}
-  .ops{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px}
+  .pergunta{font-size:12px;color:#666;margin:0 0 8px}
+  .nome{margin-bottom:8px}
+  .nome input{border:1.5px solid var(--borda)}
+  .nome input:focus{border-color:var(--sel);outline:none}
+  .nome input.tem{border-color:var(--verde);background:#f2faf4}
+  .ops{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
   .ops button{padding:12px 4px;border:1.5px solid var(--borda);border-radius:8px;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#1c1e21}
   .ops button.sel{background:var(--sel);border-color:var(--sel);color:#fff}
-  .ops.grande button{font-size:14px;padding:14px 4px}
-  .destaque button:first-child{border-color:var(--verde);color:var(--verde)}
-  .destaque button:first-child.sel{background:var(--verde);color:#fff}
   #btnEnviar{width:100%;padding:16px;border:0;border-radius:10px;background:var(--verde);color:#fff;font-size:17px;font-weight:800;cursor:pointer;margin-top:4px}
   #btnEnviar:disabled{opacity:.5}
   #msg{margin-top:10px;padding:10px;border-radius:8px;font-size:14px;display:none;text-align:center}
   #msg.ok{display:block;background:#e6f4ea;color:var(--verde)}
   #msg.erro{display:block;background:#fdecea;color:var(--vermelho)}
   .aviso{font-size:11px;color:#8a6d1a;background:#fef7e0;border:1px solid #f5e3a3;border-radius:8px;padding:8px;margin-bottom:10px;text-align:center}
-  .outro-campo{display:none;margin-top:6px}
-  .outro-campo.mostrar{display:block}
 </style>
 </head>
 <body>
@@ -38,7 +38,7 @@
   <span class="cont" id="contador">0 hoje</span>
 </header>
 <main>
-<div class="aviso">USO EXCLUSIVAMENTE INTERNO — não divulgar resultados (Lei 9.504/97, art. 33). Entrevista anônima: não anote nome nem telefone.</div>
+<div class="aviso">USO EXCLUSIVAMENTE INTERNO — não divulgar resultados (Lei 9.504/97, art. 33). Entrevista anônima: não anote nome nem telefone do entrevistado.</div>
 
 <div class="card">
   <h2>Identificação da coleta</h2>
@@ -55,42 +55,13 @@
     <button data-v="F">Feminino</button><button data-v="M">Masculino</button><button data-v="NI">Não informar</button>
   </div>
   <label>Idade</label>
-  <div class="ops" id="gFaixa">
+  <div class="ops" id="gFaixa" style="grid-template-columns:repeat(3,1fr)">
     <button data-v="16-24">16–24</button><button data-v="25-34">25–34</button><button data-v="35-44">35–44</button>
     <button data-v="45-59">45–59</button><button data-v="60+">60+</button><button data-v="NI">NI</button>
   </div>
 </div>
 
-<div class="card">
-  <h2>Deputado FEDERAL — espontânea</h2>
-  <p style="font-size:12px;color:#666;margin:0 0 8px">"Se a eleição fosse hoje, em quem o(a) senhor(a) votaria para deputado federal?" (não cite nomes)</p>
-  <div class="ops grande destaque" id="gFederal">
-    <button data-v="ROSANGELA_2215">Rosângela Reis</button>
-    <button data-v="MARCUS_VINICIUS">Marcus Vinicius</button>
-    <button data-v="VINICIUS_DINIZ">Vinicius Diniz</button>
-    <button data-v="OUTRO">Outro</button>
-    <button data-v="INDECISO">Não sabe</button>
-    <button data-v="BRANCO_NULO">Branco/Nulo</button>
-    <button data-v="NAO_RESPONDEU">Não respondeu</button>
-  </div>
-  <div class="outro-campo" id="cFederalOutro"><input id="federalOutro" placeholder="Qual nome citou? (opcional)"></div>
-</div>
-
-<div class="card">
-  <h2>Deputado ESTADUAL — espontânea</h2>
-  <p style="font-size:12px;color:#666;margin:0 0 8px">"E para deputado estadual, em quem votaria?" (não cite nomes)</p>
-  <div class="ops grande" id="gEstadual">
-    <button data-v="ANDRADE_25500">Andrade</button>
-    <button data-v="MARCIO_25800">Márcio Lima</button>
-    <button data-v="DANIEL_DO_BEM">Daniel do Bem</button>
-    <button data-v="HELENO_HOSPITAL">Heleno do Hospital</button>
-    <button data-v="OUTRO">Outro</button>
-    <button data-v="INDECISO">Não sabe</button>
-    <button data-v="BRANCO_NULO">Branco/Nulo</button>
-    <button data-v="NAO_RESPONDEU">Não respondeu</button>
-  </div>
-  <div class="outro-campo" id="cEstadualOutro"><input id="estadualOutro" placeholder="Qual nome citou? (opcional)"></div>
-</div>
+<div id="cargos"></div>
 
 <button id="btnEnviar">REGISTRAR ENTREVISTA</button>
 <div id="msg"></div>
@@ -102,19 +73,56 @@
 const sb = supabase.createClient(TRACKING_CONFIG.SUPABASE_URL, TRACKING_CONFIG.SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 const hoje = () => new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
-const escolha = {sexo:null, faixa:null, federal:null, estadual:null};
+const escolha = {sexo:null, faixa:null};
 
-function grupo(gid, chave, aoMudar){
+// Sequência da urna eletrônica
+const CARGOS = [
+  {campo:'federal',    titulo:'1º — Deputado FEDERAL',  pergunta:'"Se a eleição fosse hoje, em quem o(a) senhor(a) votaria para deputado federal?" (não cite nomes)'},
+  {campo:'estadual',   titulo:'2º — Deputado ESTADUAL', pergunta:'"E para deputado estadual, em quem votaria?"'},
+  {campo:'senador1',   titulo:'3º — Senador (1º voto)', pergunta:'"Este ano são DOIS votos para senador. Qual o primeiro nome?"'},
+  {campo:'senador2',   titulo:'4º — Senador (2º voto)', pergunta:'"E o segundo nome para senador?"'},
+  {campo:'governador', titulo:'5º — Governador',        pergunta:'"E para governador de Minas, em quem votaria?"'},
+  {campo:'presidente', titulo:'6º — Presidente',        pergunta:'"E para presidente da República?"'}
+];
+const CODS = [['INDECISO','Não sabe'],['BRANCO_NULO','Branco/Nulo'],['NAO_RESPONDEU','Não respondeu']];
+
+$('cargos').innerHTML = CARGOS.map(c=>`
+  <div class="card">
+    <h2>${c.titulo} — espontânea</h2>
+    <p class="pergunta">${c.pergunta}</p>
+    <div class="nome"><input id="n_${c.campo}" placeholder="Digite o nome citado" autocomplete="off" maxlength="80"></div>
+    <div class="ops" id="g_${c.campo}">${CODS.map(([v,r])=>`<button data-v="${v}">${r}</button>`).join('')}</div>
+  </div>`).join('');
+
+function grupo(gid, chave){
   $(gid).addEventListener('click', e=>{
     const b=e.target.closest('button'); if(!b) return;
+    const ja=b.classList.contains('sel');
     [...$(gid).children].forEach(x=>x.classList.remove('sel'));
+    if(ja){ escolha[chave]=null; return; }
     b.classList.add('sel'); escolha[chave]=b.dataset.v;
-    if(aoMudar) aoMudar(b.dataset.v);
   });
 }
 grupo('gSexo','sexo'); grupo('gFaixa','faixa');
-grupo('gFederal','federal', v=>$('cFederalOutro').classList.toggle('mostrar', v==='OUTRO'));
-grupo('gEstadual','estadual', v=>$('cEstadualOutro').classList.toggle('mostrar', v==='OUTRO'));
+
+CARGOS.forEach(c=>{
+  escolha[c.campo]=null;
+  const inp=$('n_'+c.campo), g=$('g_'+c.campo);
+  inp.addEventListener('input', ()=>{
+    inp.classList.toggle('tem', !!inp.value.trim());
+    if(inp.value.trim()){ [...g.children].forEach(x=>x.classList.remove('sel')); escolha[c.campo]=null; }
+  });
+  g.addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    const ja=b.classList.contains('sel');
+    [...g.children].forEach(x=>x.classList.remove('sel'));
+    if(ja){ escolha[c.campo]=null; return; }
+    b.classList.add('sel'); escolha[c.campo]=b.dataset.v;
+    inp.value=''; inp.classList.remove('tem');
+  });
+});
+
+const votoDe = c => { const n=$('n_'+c).value.trim(); return n || escolha[c]; };
 
 async function init(){
   const [p,b] = await Promise.all([
@@ -144,8 +152,9 @@ function mostrar(t,x){ const m=$('msg'); m.className=t; m.textContent=x; }
 $('btnEnviar').addEventListener('click', async ()=>{
   if(!$('pesquisador').value) return mostrar('erro','Selecione o pesquisador.');
   if(!$('bairro').value) return mostrar('erro','Selecione o bairro.');
-  if(!escolha.federal) return mostrar('erro','Marque a resposta para deputado FEDERAL.');
-  if(!escolha.estadual) return mostrar('erro','Marque a resposta para deputado ESTADUAL.');
+  for(const c of CARGOS){
+    if(!votoDe(c.campo)) return mostrar('erro','Responda "'+c.titulo.replace(/^\d+º — /,'')+'": digite o nome ou marque uma opção.');
+  }
   $('btnEnviar').disabled=true;
   const {error} = await sb.from('tracking_entrevistas').insert({
     data: hoje(),
@@ -153,10 +162,12 @@ $('btnEnviar').addEventListener('click', async ()=>{
     bairro: $('bairro').value,
     sexo: escolha.sexo||'NI',
     faixa_etaria: escolha.faixa||'NI',
-    voto_federal: escolha.federal,
-    voto_federal_outro: escolha.federal==='OUTRO' ? ($('federalOutro').value||null) : null,
-    voto_estadual: escolha.estadual,
-    voto_estadual_outro: escolha.estadual==='OUTRO' ? ($('estadualOutro').value||null) : null
+    voto_federal: votoDe('federal'),
+    voto_estadual: votoDe('estadual'),
+    voto_senador1: votoDe('senador1'),
+    voto_senador2: votoDe('senador2'),
+    voto_governador: votoDe('governador'),
+    voto_presidente: votoDe('presidente')
   });
   $('btnEnviar').disabled=false;
   if(error) return mostrar('erro','Erro ao enviar: '+error.message);
@@ -165,10 +176,13 @@ $('btnEnviar').addEventListener('click', async ()=>{
     localStorage.setItem('pesq_bairro',$('bairro').value);
   }catch(_){}
   // limpa só a entrevista; mantém pesquisador e bairro para a próxima
-  ['gSexo','gFaixa','gFederal','gEstadual'].forEach(g=>[...$(g).children].forEach(x=>x.classList.remove('sel')));
-  escolha.sexo=escolha.faixa=escolha.federal=escolha.estadual=null;
-  $('federalOutro').value=''; $('estadualOutro').value='';
-  $('cFederalOutro').classList.remove('mostrar'); $('cEstadualOutro').classList.remove('mostrar');
+  ['gSexo','gFaixa'].forEach(g=>[...$(g).children].forEach(x=>x.classList.remove('sel')));
+  escolha.sexo=escolha.faixa=null;
+  CARGOS.forEach(c=>{
+    escolha[c.campo]=null;
+    $('n_'+c.campo).value=''; $('n_'+c.campo).classList.remove('tem');
+    [...$('g_'+c.campo).children].forEach(x=>x.classList.remove('sel'));
+  });
   mostrar('ok','✅ Registrada! Pode partir para a próxima.');
   window.scrollTo({top:0,behavior:'smooth'});
   atualizarContador();
