@@ -30,6 +30,14 @@
   #msg.ok{display:block;background:#e6f4ea;color:var(--verde)}
   #msg.erro{display:block;background:#fdecea;color:var(--vermelho)}
   .aviso{font-size:11px;color:#8a6d1a;background:#fef7e0;border:1px solid #f5e3a3;border-radius:8px;padding:8px;margin-bottom:10px;text-align:center}
+  #btnIniciar{width:100%;padding:16px;border:0;border-radius:10px;background:var(--azul);color:#fff;font-size:16px;font-weight:800;cursor:pointer}
+  #btnIniciar:disabled{opacity:.5}
+  #contagem{display:none;text-align:center;padding:8px 0}
+  #contagem .frase{font-size:15px;font-weight:700;color:var(--azul);margin-bottom:8px}
+  #contagem .num{font-size:44px;font-weight:800;color:var(--vermelho)}
+  #gravStatus{display:none;text-align:center;font-size:14px;font-weight:700;color:var(--vermelho);padding:6px 0}
+  #gravStatus .pisca{animation:pisca 1s infinite}
+  @keyframes pisca{50%{opacity:.2}}
 </style>
 </head>
 <body>
@@ -46,6 +54,16 @@
   <select id="pesquisador"><option value="">Carregando…</option></select>
   <label>Bairro da entrevista</label>
   <select id="bairro"><option value="">Carregando…</option></select>
+</div>
+
+<div class="card">
+  <h2>Gravação da entrevista</h2>
+  <button id="btnIniciar">▶️ INICIAR ENTREVISTA</button>
+  <div id="contagem">
+    <div class="frase">Fale para o entrevistado:<br>"Essa conversa vai ser gravada só para controle de qualidade da pesquisa, tudo bem?"</div>
+    <div class="num">5</div>
+  </div>
+  <div id="gravStatus"><span class="pisca">🔴</span> Gravando… <span id="gravTempo">0:00</span> — a gravação para sozinha ao registrar</div>
 </div>
 
 <div class="card">
@@ -124,6 +142,64 @@ CARGOS.forEach(c=>{
 
 const votoDe = c => { const n=$('n_'+c).value.trim(); return n || escolha[c]; };
 
+// ===== Gravação =====
+let gravador=null, gravPartes=[], gravStream=null, gravTimer=null, gravIni=0, micIndisponivel=false, entrevistaIniciada=false;
+const MIME = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(m=>window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+const EXT = MIME.includes('mp4') ? 'm4a' : 'webm';
+
+$('btnIniciar').addEventListener('click', async ()=>{
+  $('btnIniciar').disabled=true;
+  micIndisponivel=false;
+  try{
+    gravStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  }catch(_){
+    micIndisponivel=true;
+    mostrar('erro','Sem acesso ao microfone — a entrevista será registrada SEM áudio. Peça ao coordenador para liberar o microfone deste celular.');
+  }
+  // contador de 5s com a frase de aviso
+  $('btnIniciar').style.display='none';
+  $('contagem').style.display='block';
+  for(let s=5;s>=1;s--){
+    $('contagem').querySelector('.num').textContent=s;
+    await new Promise(r=>setTimeout(r,1000));
+  }
+  $('contagem').style.display='none';
+  entrevistaIniciada=true;
+  if(gravStream && !micIndisponivel && MIME){
+    gravPartes=[];
+    gravador = new MediaRecorder(gravStream, {mimeType:MIME, audioBitsPerSecond:24000});
+    gravador.ondataavailable = e=>{ if(e.data.size) gravPartes.push(e.data); };
+    gravador.start(1000);
+    gravIni=Date.now();
+    $('gravStatus').style.display='block';
+    gravTimer=setInterval(()=>{
+      const s=Math.floor((Date.now()-gravIni)/1000);
+      $('gravTempo').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+    },1000);
+  }
+  mostrar('ok','Entrevista iniciada — pode começar as perguntas.');
+});
+
+async function pararGravacao(){
+  if(!gravador || gravador.state==='inactive') return null;
+  const fim = new Promise(r=>{ gravador.onstop=r; });
+  gravador.stop();
+  await fim;
+  clearInterval(gravTimer); $('gravStatus').style.display='none';
+  if(gravStream) gravStream.getTracks().forEach(t=>t.stop());
+  const blob = new Blob(gravPartes, {type: MIME.split(';')[0]});
+  gravador=null; gravStream=null; gravPartes=[];
+  return blob.size>0 ? blob : null;
+}
+
+function resetGravacao(){
+  entrevistaIniciada=false;
+  $('btnIniciar').disabled=false;
+  $('btnIniciar').style.display='block';
+  $('gravStatus').style.display='none';
+  clearInterval(gravTimer);
+}
+
 async function init(){
   const [p,b] = await Promise.all([
     sb.from('v_tracking_pesquisadores').select('id,nome'),
@@ -152,10 +228,22 @@ function mostrar(t,x){ const m=$('msg'); m.className=t; m.textContent=x; }
 $('btnEnviar').addEventListener('click', async ()=>{
   if(!$('pesquisador').value) return mostrar('erro','Selecione o pesquisador.');
   if(!$('bairro').value) return mostrar('erro','Selecione o bairro.');
+  if(!entrevistaIniciada) return mostrar('erro','Toque em ▶️ INICIAR ENTREVISTA antes de começar (é o que liga a gravação).');
   for(const c of CARGOS){
     if(!votoDe(c.campo)) return mostrar('erro','Responda "'+c.titulo.replace(/^\d+º — /,'')+'": digite o nome ou marque uma opção.');
   }
   $('btnEnviar').disabled=true;
+  // encerra e sobe o áudio antes de registrar
+  let audioPath=null;
+  try{
+    const blob = await pararGravacao();
+    if(blob){
+      mostrar('ok','Enviando áudio…');
+      const caminho = hoje()+'/'+(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2))+'.'+EXT;
+      const up = await sb.storage.from('gravacoes').upload(caminho, blob, {contentType: blob.type||'audio/webm'});
+      if(!up.error) audioPath=caminho;
+    }
+  }catch(_){/* áudio é auditoria; a entrevista vale mesmo sem ele */}
   const {error} = await sb.from('tracking_entrevistas').insert({
     data: hoje(),
     pesquisador_id: $('pesquisador').value,
@@ -167,10 +255,12 @@ $('btnEnviar').addEventListener('click', async ()=>{
     voto_senador1: votoDe('senador1'),
     voto_senador2: votoDe('senador2'),
     voto_governador: votoDe('governador'),
-    voto_presidente: votoDe('presidente')
+    voto_presidente: votoDe('presidente'),
+    audio_path: audioPath
   });
   $('btnEnviar').disabled=false;
   if(error) return mostrar('erro','Erro ao enviar: '+error.message);
+  resetGravacao();
   try{
     localStorage.setItem('pesq_pesquisador',$('pesquisador').value);
     localStorage.setItem('pesq_bairro',$('bairro').value);
@@ -183,7 +273,7 @@ $('btnEnviar').addEventListener('click', async ()=>{
     $('n_'+c.campo).value=''; $('n_'+c.campo).classList.remove('tem');
     [...$('g_'+c.campo).children].forEach(x=>x.classList.remove('sel'));
   });
-  mostrar('ok','✅ Registrada! Pode partir para a próxima.');
+  mostrar('ok', audioPath ? '✅ Registrada com áudio! Pode partir para a próxima.' : '✅ Registrada (sem áudio). Pode partir para a próxima.');
   window.scrollTo({top:0,behavior:'smooth'});
   atualizarContador();
 });
