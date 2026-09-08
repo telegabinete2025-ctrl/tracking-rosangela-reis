@@ -91,6 +91,14 @@
 </div>
 
 <div class="card">
+  <h2>Últimas entrevistas — auditoria</h2>
+  <div style="overflow-x:auto"><table id="tAudit">
+    <thead><tr><th>Quando</th><th>Bairro</th><th>Pesquisador(a)</th><th>Federal</th><th>Áudio</th></tr></thead>
+    <tbody></tbody></table></div>
+  <div class="nota">Gravações de uso interno, apenas para controle de qualidade do trabalho de campo. Toque em 🎧 Ouvir para carregar o áudio.</div>
+</div>
+
+<div class="card">
   <h2>Relatório para a coordenação</h2>
   <button id="btnRel" style="padding:10px 16px;border:0;border-radius:8px;background:var(--azul);color:#fff;font-weight:700;cursor:pointer;font-size:13px">📋 Gerar resumo do período</button>
   <button id="btnCopiar" style="padding:10px 16px;border:0;border-radius:8px;background:var(--verde);color:#fff;font-weight:700;cursor:pointer;font-size:13px;display:none">Copiar</button>
@@ -170,8 +178,29 @@ function render(){
     `<div class="kpi amarelo"><div class="v">${pf(contaCod(rs,'voto_federal','INDECISO'),n)}</div><div class="l">Indecisos — Federal</div><div class="c">oportunidade de convencimento</div></div>`,
     `<div class="kpi"><div class="v">${pf(contaCod(rs,'voto_federal','NAO_RESPONDEU')+contaCod(rs,'voto_federal','BRANCO_NULO'),n)}</div><div class="l">Branco/nulo + não resp. — Fed.</div><div class="c">no período filtrado</div></div>`
   ].join('');
-  secoes(rs); grafico(); porBairro(rs); porPerfil(rs);
+  secoes(rs); grafico(); porBairro(rs); porPerfil(rs); auditoria(rs);
 }
+
+function auditoria(rs){
+  const rows=[...rs].sort((a,b)=>String(b.criado_em||'').localeCompare(String(a.criado_em||''))).slice(0,15);
+  $('tAudit').querySelector('tbody').innerHTML = rows.map(e=>{
+    const quando = e.criado_em ? new Date(e.criado_em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : e.data;
+    const voto = e.voto_federal in CODIGOS ? CODIGOS[e.voto_federal] : e.voto_federal;
+    const audio = e.audio_path
+      ? `<button class="ouvir" data-p="${esc(e.audio_path)}" style="padding:5px 10px;border:1px solid var(--borda);border-radius:6px;background:#fff;cursor:pointer;font-size:12px">🎧 Ouvir</button>`
+      : '<span style="color:#999">sem áudio</span>';
+    return `<tr><td>${quando}</td><td>${esc(e.bairro)}</td><td>${esc(e.pesquisador)}</td><td>${esc(voto)}</td><td>${audio}</td></tr>`;
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:#777">Sem entrevistas.</td></tr>';
+}
+$('tAudit').addEventListener('click', async ev=>{
+  const b=ev.target.closest('button.ouvir'); if(!b) return;
+  b.disabled=true; b.textContent='carregando…';
+  const r=await sb.storage.from('gravacoes').createSignedUrl(b.dataset.p, 3600);
+  if(r.error||!r.data){ b.textContent='erro ao carregar'; return; }
+  const a=document.createElement('audio'); a.controls=true; a.autoplay=true;
+  a.src=r.data.signedUrl; a.style.height='30px'; a.style.maxWidth='220px';
+  b.replaceWith(a);
+});
 
 // uma seção por cargo, na sequência da urna: nomes mais citados + códigos
 function secoes(rs){
