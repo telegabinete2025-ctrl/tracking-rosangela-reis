@@ -66,6 +66,7 @@
   <div id="gravStatus"><span class="pisca">🔴</span> Gravando… <span id="gravTempo">0:00</span> — a gravação para sozinha ao registrar</div>
 </div>
 
+<div id="telaForm" hidden>
 <div class="card">
   <h2>Perfil do entrevistado</h2>
   <label>Sexo</label>
@@ -82,6 +83,7 @@
 <div id="cargos"></div>
 
 <button id="btnEnviar">REGISTRAR ENTREVISTA</button>
+</div>
 <div id="msg"></div>
 </main>
 
@@ -148,6 +150,8 @@ const MIME = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(m=>window.
 const EXT = MIME.includes('mp4') ? 'm4a' : 'webm';
 
 $('btnIniciar').addEventListener('click', async ()=>{
+  if(!$('pesquisador').value) return mostrar('erro','Selecione o pesquisador antes de iniciar.');
+  if(!$('bairro').value) return mostrar('erro','Selecione o bairro antes de iniciar.');
   $('btnIniciar').disabled=true;
   micIndisponivel=false;
   try{
@@ -177,6 +181,7 @@ $('btnIniciar').addEventListener('click', async ()=>{
       $('gravTempo').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
     },1000);
   }
+  $('telaForm').hidden=false;
   mostrar('ok','Entrevista iniciada — pode começar as perguntas.');
 });
 
@@ -194,6 +199,7 @@ async function pararGravacao(){
 
 function resetGravacao(){
   entrevistaIniciada=false;
+  $('telaForm').hidden=true;
   $('btnIniciar').disabled=false;
   $('btnIniciar').style.display='block';
   $('gravStatus').style.display='none';
