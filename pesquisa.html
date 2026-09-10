@@ -222,7 +222,7 @@ function resetGravacao(){
 
 async function init(){
   const [p,b] = await Promise.all([
-    sb.from('v_tracking_pesquisadores').select('id,nome'),
+    sb.from('v_tracking_pesquisadores').select('id,nome,slug'),
     sb.from('v_tracking_bairros').select('nome')
   ]);
   if(p.error||b.error){ mostrar('erro','Falha ao carregar. Verifique a internet e recarregue.'); return; }
@@ -232,6 +232,13 @@ async function init(){
     const up=localStorage.getItem('pesq_pesquisador'); if(up) $('pesquisador').value=up;
     const ub=localStorage.getItem('pesq_bairro'); if(ub) $('bairro').value=ub;
   }catch(_){}
+  // link individual: ?p=codigo já trava a pesquisadora deste celular
+  const pSlug = new URLSearchParams(location.search).get('p');
+  if(pSlug){
+    const achou = p.data.find(x=>x.slug===pSlug);
+    if(achou){ $('pesquisador').value=achou.id; $('pesquisador').disabled=true; }
+    else mostrar('erro','Link de pesquisadora inválido — selecione o nome manualmente.');
+  }
   atualizarContador();
 }
 
