@@ -54,6 +54,8 @@
   <select id="pesquisador"><option value="">Carregando…</option></select>
   <label>Bairro da entrevista</label>
   <select id="bairro"><option value="">Carregando…</option></select>
+  <label>Rua / ponto de referência (opcional)</label>
+  <input id="rua" placeholder="Ex.: Rua das Flores, perto da padaria" maxlength="120" autocomplete="off">
 </div>
 
 <div class="card">
@@ -144,6 +146,17 @@ CARGOS.forEach(c=>{
 
 const votoDe = c => { const n=$('n_'+c).value.trim(); return n || escolha[c]; };
 
+// ===== Localização (GPS) =====
+let gps=null; // {lat,lng,prec}
+function capturarGPS(){
+  gps=null;
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    p=>{ gps={lat:p.coords.latitude, lng:p.coords.longitude, prec:Math.round(p.coords.accuracy||0)}; },
+    ()=>{}, {enableHighAccuracy:true, timeout:10000, maximumAge:60000}
+  );
+}
+
 // ===== Gravação =====
 let gravador=null, gravPartes=[], gravStream=null, gravTimer=null, gravIni=0, micIndisponivel=false, entrevistaIniciada=false;
 const MIME = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(m=>window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
@@ -154,6 +167,7 @@ $('btnIniciar').addEventListener('click', async ()=>{
   if(!$('bairro').value) return mostrar('erro','Selecione o bairro antes de iniciar.');
   $('btnIniciar').disabled=true;
   micIndisponivel=false;
+  capturarGPS(); // pega a localização em segundo plano (permissão pedida na 1ª vez)
   try{
     gravStream = await navigator.mediaDevices.getUserMedia({audio:true});
   }catch(_){
@@ -262,7 +276,11 @@ $('btnEnviar').addEventListener('click', async ()=>{
     voto_senador2: votoDe('senador2'),
     voto_governador: votoDe('governador'),
     voto_presidente: votoDe('presidente'),
-    audio_path: audioPath
+    audio_path: audioPath,
+    rua: $('rua').value.trim() || null,
+    lat: gps ? gps.lat : null,
+    lng: gps ? gps.lng : null,
+    gps_precisao_m: gps ? gps.prec : null
   });
   $('btnEnviar').disabled=false;
   if(error) return mostrar('erro','Erro ao enviar: '+error.message);
