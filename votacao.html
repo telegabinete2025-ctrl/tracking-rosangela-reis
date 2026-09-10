@@ -93,7 +93,7 @@
 <div class="card">
   <h2>Últimas entrevistas — auditoria</h2>
   <div style="overflow-x:auto"><table id="tAudit">
-    <thead><tr><th>Quando</th><th>Bairro</th><th>Pesquisador(a)</th><th>Federal</th><th>Áudio</th></tr></thead>
+    <thead><tr><th>Quando</th><th>Bairro</th><th>Local</th><th>Pesquisador(a)</th><th>Federal</th><th>Áudio</th></tr></thead>
     <tbody></tbody></table></div>
   <div class="nota">Gravações de uso interno, apenas para controle de qualidade do trabalho de campo. Toque em 🎧 Ouvir para carregar o áudio.</div>
 </div>
@@ -189,8 +189,13 @@ function auditoria(rs){
     const audio = e.audio_path
       ? `<button class="ouvir" data-p="${esc(e.audio_path)}" style="padding:5px 10px;border:1px solid var(--borda);border-radius:6px;background:#fff;cursor:pointer;font-size:12px">🎧 Ouvir</button>`
       : '<span style="color:#999">sem áudio</span>';
-    return `<tr><td>${quando}</td><td>${esc(e.bairro)}</td><td>${esc(e.pesquisador)}</td><td>${esc(voto)}</td><td>${audio}</td></tr>`;
-  }).join('')||'<tr><td colspan="5" style="text-align:center;color:#777">Sem entrevistas.</td></tr>';
+    let local = '<span style="color:#999">—</span>';
+    if(e.lat!=null && e.lng!=null){
+      local = `<a href="https://www.google.com/maps?q=${e.lat},${e.lng}" target="_blank" rel="noopener" style="text-decoration:none">📍 Mapa${e.gps_precisao_m?` (±${e.gps_precisao_m}m)`:''}</a>`;
+      if(e.rua) local += `<br><span style="font-size:11px;color:#777">${esc(e.rua)}</span>`;
+    } else if(e.rua){ local = esc(e.rua); }
+    return `<tr><td>${quando}</td><td>${esc(e.bairro)}</td><td>${local}</td><td>${esc(e.pesquisador)}</td><td>${esc(voto)}</td><td>${audio}</td></tr>`;
+  }).join('')||'<tr><td colspan="6" style="text-align:center;color:#777">Sem entrevistas.</td></tr>';
 }
 $('tAudit').addEventListener('click', async ev=>{
   const b=ev.target.closest('button.ouvir'); if(!b) return;
