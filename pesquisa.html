@@ -244,9 +244,8 @@ async function init(){
 
 async function atualizarContador(){
   const pid=$('pesquisador').value; if(!pid) return;
-  const {count} = await sb.from('tracking_entrevistas').select('id',{count:'exact',head:true})
-    .eq('pesquisador_id',pid).eq('data',hoje()).eq('teste',false);
-  $('contador').textContent=(count||0)+' hoje';
+  const r = await sb.rpc('tracking_contador', {p_pesquisador: pid});
+  $('contador').textContent=(r.data||0)+' hoje';
 }
 $('pesquisador').addEventListener('change', atualizarContador);
 
