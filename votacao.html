@@ -135,8 +135,24 @@ const CARGOS = [
 
 // apelidos: junta número/variação no nome oficial (ex.: 13 -> Lula) — só na exibição
 const CARGO_KEY = {voto_federal:'federal', voto_estadual:'estadual', voto_senador1:'senador', voto_senador2:'senador', voto_governador:'governador', voto_presidente:'presidente'};
-let APELIDOS = {};
-const canon = (campo,v) => { if(!v||isCod(v)) return v; const m=APELIDOS[CARGO_KEY[campo]]; const c=m && m[normNome(v)]; return c||v; };
+let APELIDOS = {}, AUTOMERGE = {};
+const canonAp = (campo,v) => { if(!v||isCod(v)) return v; const m=APELIDOS[CARGO_KEY[campo]]; const c=m && m[normNome(v)]; return c||v; };
+const canon = (campo,v) => { const b=canonAp(campo,v); if(!b||isCod(b)) return b; const g=AUTOMERGE[campo]; const c=g && g[normNome(b)]; return c||b; };
+// nome avulso vira o composto quando só existe UM compatível no cargo (ex.: Patrus -> Patrus Ananias); ambíguo fica separado
+function construirAutoMerge(){
+  AUTOMERGE={};
+  CARGOS.forEach(c=>{
+    const nomes={};
+    ENT.forEach(e=>{ const v=canonAp(c.campo,e[c.campo]); if(!v||isCod(v)) return; const k=normNome(v); if(k && !nomes[k]) nomes[k]=v.trim(); });
+    const keys=Object.keys(nomes), m={};
+    keys.forEach(a=>{
+      const ta=a.split(' ');
+      const cand=keys.filter(b=>{ if(b===a) return false; const tb=b.split(' '); return tb.length>ta.length && ta.every(t=>tb.includes(t)); });
+      if(cand.length===1) m[a]=nomes[cand[0]];
+    });
+    AUTOMERGE[c.campo]=m;
+  });
+}
 
 async function carregar(){
   const [r, ap] = await Promise.all([
@@ -146,6 +162,7 @@ async function carregar(){
   APELIDOS={};
   (ap.data||[]).forEach(a=>{ (APELIDOS[a.cargo] ??= {})[normNome(a.alias)] = a.nome; });
   ENT = r.data||[];
+  construirAutoMerge();
   $('atualizado').textContent = new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
   const bairros=[...new Set(ENT.map(e=>e.bairro))].sort();
   $('fBairro').innerHTML='<option value="">Todos os bairros</option>'+bairros.map(b=>`<option>${esc(b)}</option>`).join('');
