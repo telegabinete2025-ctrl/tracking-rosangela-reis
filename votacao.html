@@ -51,7 +51,14 @@
   <div><a class="voltar" href="index.html">← Painel de campo</a>
   <a class="form-link" href="pesquisa.html">+ Nova entrevista</a></div>
 </header>
-<main>
+<div id="telaSenha" style="display:none;max-width:340px;margin:70px auto;background:#fff;border:1px solid var(--borda);border-radius:10px;padding:22px;text-align:center">
+  <div style="font-size:34px;margin-bottom:6px">🔒</div>
+  <h2 style="margin-bottom:12px">Acesso restrito da coordenação</h2>
+  <input id="senhaInput" type="password" placeholder="Senha de acesso" autocomplete="current-password" style="width:100%;padding:11px;border:1px solid var(--borda);border-radius:8px;font-size:16px;box-sizing:border-box">
+  <button id="btnEntrar" style="width:100%;margin-top:10px;padding:13px;border:0;border-radius:8px;background:var(--azul);color:#fff;font-weight:700;font-size:15px;cursor:pointer">Entrar</button>
+  <div id="senhaMsg" style="color:var(--vermelho);font-size:13px;margin-top:8px;min-height:16px"></div>
+</div>
+<main id="conteudo" hidden>
 <div class="aviso">⚠️ USO EXCLUSIVAMENTE INTERNO DA COORDENAÇÃO — a divulgação pública destes números (inclusive em grupos de WhatsApp) exige registro prévio no TSE com 5 dias de antecedência (Lei 9.504/97, art. 33).</div>
 
 <div class="card filtros">
@@ -154,15 +161,30 @@ function construirAutoMerge(){
   });
 }
 
+let SENHA=null; try{ SENHA=localStorage.getItem('painel_senha'); }catch(_){}
+function pedirSenha(msg){
+  $('conteudo').hidden=true;
+  $('telaSenha').style.display='block';
+  $('senhaMsg').textContent=msg||'';
+  try{ $('senhaInput').focus(); }catch(_){}
+}
 async function carregar(){
+  if(!SENHA){ pedirSenha(); return; }
   const [r, ap] = await Promise.all([
-    sb.from('v_tracking_entrevistas').select('*').eq('teste',false).order('data',{ascending:false}).limit(20000),
+    sb.rpc('tracking_painel', {p_senha: SENHA}),
     sb.from('tracking_apelidos').select('cargo,alias,nome')
   ]);
+  if(r.error){
+    SENHA=null; try{ localStorage.removeItem('painel_senha'); }catch(_){}
+    pedirSenha((r.error.message||'').includes('SENHA_INCORRETA') ? 'Senha incorreta.' : 'Falha ao carregar. Verifique a internet e tente de novo.');
+    return;
+  }
   APELIDOS={};
   (ap.data||[]).forEach(a=>{ (APELIDOS[a.cargo] ??= {})[normNome(a.alias)] = a.nome; });
-  ENT = r.data||[];
+  ENT = (r.data||[]).filter(e=>!e.teste).sort((a,b)=>String(b.data).localeCompare(String(a.data)));
   construirAutoMerge();
+  $('telaSenha').style.display='none';
+  $('conteudo').hidden=false;
   $('atualizado').textContent = new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
   const bairros=[...new Set(ENT.map(e=>e.bairro))].sort();
   $('fBairro').innerHTML='<option value="">Todos os bairros</option>'+bairros.map(b=>`<option>${esc(b)}</option>`).join('');
@@ -328,6 +350,13 @@ $('btnRel').onclick=()=>{
 $('btnCopiar').onclick=async()=>{await navigator.clipboard.writeText($('relatorio').textContent);$('btnCopiar').textContent='✅ Copiado';setTimeout(()=>$('btnCopiar').textContent='Copiar',2000)};
 
 ['fPeriodo','fBairro','fPesquisador'].forEach(i=>$(i).addEventListener('change',render));
+$('btnEntrar').addEventListener('click', ()=>{
+  const s=$('senhaInput').value.trim(); if(!s) return;
+  SENHA=s; try{ localStorage.setItem('painel_senha',s); }catch(_){}
+  $('senhaMsg').textContent='Verificando…';
+  carregar();
+});
+$('senhaInput').addEventListener('keydown', e=>{ if(e.key==='Enter') $('btnEntrar').click(); });
 carregar();
 setInterval(carregar, 5*60*1000);
 </script>
