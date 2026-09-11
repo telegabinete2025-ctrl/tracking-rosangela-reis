@@ -133,8 +133,18 @@ const CARGOS = [
   {campo:'voto_presidente', rot:'Presidente'}
 ];
 
+// apelidos: junta número/variação no nome oficial (ex.: 13 -> Lula) — só na exibição
+const CARGO_KEY = {voto_federal:'federal', voto_estadual:'estadual', voto_senador1:'senador', voto_senador2:'senador', voto_governador:'governador', voto_presidente:'presidente'};
+let APELIDOS = {};
+const canon = (campo,v) => { if(!v||isCod(v)) return v; const m=APELIDOS[CARGO_KEY[campo]]; const c=m && m[normNome(v)]; return c||v; };
+
 async function carregar(){
-  const r = await sb.from('v_tracking_entrevistas').select('*').eq('teste',false).order('data',{ascending:false}).limit(20000);
+  const [r, ap] = await Promise.all([
+    sb.from('v_tracking_entrevistas').select('*').eq('teste',false).order('data',{ascending:false}).limit(20000),
+    sb.from('tracking_apelidos').select('cargo,alias,nome')
+  ]);
+  APELIDOS={};
+  (ap.data||[]).forEach(a=>{ (APELIDOS[a.cargo] ??= {})[normNome(a.alias)] = a.nome; });
   ENT = r.data||[];
   $('atualizado').textContent = new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
   const bairros=[...new Set(ENT.map(e=>e.bairro))].sort();
@@ -159,14 +169,14 @@ function filtrar(ini,fim){
 function ranking(rs,campo){
   const m={};
   rs.forEach(e=>{
-    const v=e[campo]; if(!v||isCod(v)) return;
+    const v=canon(campo, e[campo]); if(!v||isCod(v)) return;
     const k=normNome(v); if(!k) return;
     (m[k] ??= {n:0, exemplo:v.trim()}).n++;
   });
   return Object.values(m).sort((a,b)=>b.n-a.n);
 }
 const contaCod=(rs,campo,cod)=>rs.filter(e=>e[campo]===cod).length;
-const contaRos=rs=>rs.filter(e=>isRos(e.voto_federal)).length;
+const contaRos=rs=>rs.filter(e=>isRos(canon('voto_federal',e.voto_federal))).length;
 
 function render(){
   const [ini,fim]=intervalo(), rs=filtrar(ini,fim), n=rs.length;
@@ -254,8 +264,8 @@ function grafico(){
 // colunas dinâmicas: Rosângela + top-3 outros nomes do federal no período
 function colunasFed(rs){
   const outros=ranking(rs,'voto_federal').filter(v=>!isRos(v.exemplo)).slice(0,3);
-  return [{rot:'Rosângela', f:e=>isRos(e.voto_federal)},
-    ...outros.map(o=>({rot:esc(o.exemplo), f:e=>normNome(e.voto_federal||'')===normNome(o.exemplo)}))];
+  return [{rot:'Rosângela', f:e=>isRos(canon('voto_federal',e.voto_federal))},
+    ...outros.map(o=>({rot:esc(o.exemplo), f:e=>normNome(canon('voto_federal',e.voto_federal)||'')===normNome(o.exemplo)}))];
 }
 
 function porBairro(rs){
