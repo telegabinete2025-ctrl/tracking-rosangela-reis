@@ -260,15 +260,10 @@ $('tAudit').addEventListener('click', async ev=>{
 function secoes(rs){
   const n=rs.length;
   const cartao = c => {
-    // mostra TODOS os nomes com 2+ citações (mínimo 8 nomes); os de 1 citação viram uma linha "Outros"
-    const todos=ranking(rs,c.campo);
-    const top=todos.filter(v=>v.n>=2);
-    const uns=todos.filter(v=>v.n<2);
-    while(top.length<8 && uns.length) top.push(uns.shift());
-    const outros=uns.reduce((a,v)=>a+v.n,0);
+    // mostra TODOS os nomes citados no período, do mais ao menos citado
+    const top=ranking(rs,c.campo);
     const linhas=[
       ...top.map(v=>({rot:esc(v.exemplo), q:v.n, cor: isRos(v.exemplo)&&c.campo==='voto_federal' ? 'var(--verde)' : '#3a6ea5', b:true})),
-      ...(outros? [{rot:`Outros nomes (${uns.length} com 1 citação)`, q:outros, cor:'#b9c0c9', b:false}] : []),
       ...Object.entries(CODIGOS).map(([cod,rot])=>({rot, q:contaCod(rs,c.campo,cod), cor: cod==='INDECISO'?'#b8860b':'#8a919b', b:false}))
     ];
     return `<div class="card"><h2>${c.rot} — espontânea</h2>`+
