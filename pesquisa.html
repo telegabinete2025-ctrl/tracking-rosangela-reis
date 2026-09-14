@@ -158,7 +158,7 @@ function capturarGPS(){
 }
 
 // ===== Gravação =====
-let gravador=null, gravPartes=[], gravStream=null, gravTimer=null, gravIni=0, micIndisponivel=false, entrevistaIniciada=false;
+let gravador=null, gravPartes=[], gravStream=null, gravTimer=null, gravIni=0, micIndisponivel=false, entrevistaIniciada=false, blobPendente=null, audioPathPendente=null;
 const MIME = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(m=>window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
 const EXT = MIME.includes('mp4') ? 'm4a' : 'webm';
 
@@ -170,9 +170,10 @@ $('btnIniciar').addEventListener('click', async ()=>{
   capturarGPS(); // pega a localização em segundo plano (permissão pedida na 1ª vez)
   try{
     gravStream = await navigator.mediaDevices.getUserMedia({audio:true});
-  }catch(_){
-    micIndisponivel=true;
-    mostrar('erro','Sem acesso ao microfone — a entrevista será registrada SEM áudio. Peça ao coordenador para liberar o microfone deste celular.');
+  }catch(_){ gravStream=null; }
+  if(!gravStream || !MIME){
+    $('btnIniciar').disabled=false;
+    return mostrar('erro','⛔ SEM MICROFONE, SEM ENTREVISTA. A gravação é obrigatória. Libere o microfone deste celular (toque no cadeado 🔒 ao lado do endereço > Microfone > Permitir) e tente de novo. Se não resolver, chame o coordenador.');
   }
   // contador de 5s com a frase de aviso
   $('btnIniciar').style.display='none';
@@ -259,17 +260,26 @@ $('btnEnviar').addEventListener('click', async ()=>{
     if(!votoDe(c.campo)) return mostrar('erro','Responda "'+c.titulo.replace(/^\d+º — /,'')+'": digite o nome ou marque uma opção.');
   }
   $('btnEnviar').disabled=true;
-  // encerra e sobe o áudio antes de registrar
-  let audioPath=null;
-  try{
-    const blob = await pararGravacao();
-    if(blob){
+  // ÁUDIO OBRIGATÓRIO: a entrevista só é registrada com a gravação enviada
+  if(!audioPathPendente){
+    try{
+      if(!blobPendente) blobPendente = await pararGravacao();
+      if(!blobPendente){
+        $('btnEnviar').disabled=false;
+        resetGravacao();
+        return mostrar('erro','⛔ A gravação falhou e a entrevista NÃO foi registrada. Toque em INICIAR ENTREVISTA e refaça com o microfone liberado.');
+      }
       mostrar('ok','Enviando áudio…');
       const caminho = hoje()+'/'+(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2))+'.'+EXT;
-      const up = await sb.storage.from('gravacoes').upload(caminho, blob, {contentType: blob.type||'audio/webm'});
-      if(!up.error) audioPath=caminho;
+      const up = await sb.storage.from('gravacoes').upload(caminho, blobPendente, {contentType: blobPendente.type||'audio/webm'});
+      if(up.error) throw up.error;
+      audioPathPendente=caminho; blobPendente=null;
+    }catch(_){
+      $('btnEnviar').disabled=false;
+      return mostrar('erro','Falha ao enviar o áudio (internet fraca?). As respostas estão guardadas — toque em REGISTRAR ENTREVISTA de novo.');
     }
-  }catch(_){/* áudio é auditoria; a entrevista vale mesmo sem ele */}
+  }
+  const audioPath=audioPathPendente;
   const {error} = await sb.from('tracking_entrevistas').insert({
     data: hoje(),
     pesquisador_id: $('pesquisador').value,
@@ -290,6 +300,7 @@ $('btnEnviar').addEventListener('click', async ()=>{
   });
   $('btnEnviar').disabled=false;
   if(error) return mostrar('erro','Erro ao enviar: '+error.message);
+  audioPathPendente=null;
   resetGravacao();
   try{
     localStorage.setItem('pesq_pesquisador',$('pesquisador').value);
@@ -303,7 +314,7 @@ $('btnEnviar').addEventListener('click', async ()=>{
     $('n_'+c.campo).value=''; $('n_'+c.campo).classList.remove('tem');
     [...$('g_'+c.campo).children].forEach(x=>x.classList.remove('sel'));
   });
-  mostrar('ok', audioPath ? '✅ Registrada com áudio! Pode partir para a próxima.' : '✅ Registrada (sem áudio). Pode partir para a próxima.');
+  mostrar('ok','✅ Registrada com áudio! Pode partir para a próxima.');
   window.scrollTo({top:0,behavior:'smooth'});
   atualizarContador();
 });
