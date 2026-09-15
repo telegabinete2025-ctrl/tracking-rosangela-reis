@@ -343,7 +343,7 @@ $('btnRel').onclick=()=>{
   t+=`Rosângela Reis (federal): ${pf(ros,n)} (±${margem(pct(ros,n)/100,n)} p.p.)\n`;
   CARGOS.forEach(c=>{
     t+=`\n${c.rot.toUpperCase()} (espontânea)\n`;
-    ranking(rs,c.campo).slice(0,5).forEach(v=>{ t+=`${v.exemplo}: ${pf(v.n,n)} (${v.n})\n`; });
+    ranking(rs,c.campo).forEach(v=>{ t+=`${v.exemplo}: ${pf(v.n,n)} (${v.n})\n`; });
     Object.entries(CODIGOS).forEach(([cod,rot])=>{ t+=`${rot}: ${pf(contaCod(rs,c.campo,cod),n)}\n`; });
   });
   $('relatorio').style.display='block'; $('relatorio').textContent=t; $('btnCopiar').style.display='inline-block';
