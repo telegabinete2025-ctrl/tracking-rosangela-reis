@@ -129,13 +129,28 @@ const addDias = (s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n)
 const fmt = n => (n||0).toLocaleString('pt-BR');
 
 async function carregar(){
-  const [l,c,cfg,p] = await Promise.all([
+  const [l,c,cfg,p,ent] = await Promise.all([
     sb.from('v_tracking_lancamentos').select('*').eq('teste',false).order('data',{ascending:false}).limit(5000),
     sb.from('v_tracking_cobertura').select('*'),
     sb.from('v_tracking_config').select('*'),
-    sb.from('v_tracking_pesquisadores').select('id,nome')
+    sb.from('v_tracking_pesquisadores').select('id,nome'),
+    sb.from('v_tracking_producao').select('*').limit(10000)
   ]);
-  LANC = l.data||[]; COB = c.data||[]; PESQ = p.data||[];
+  // entrevistas da pesquisa viram atividades de producao (1 pessoa alcancada cada; sem votos)
+  const entPseudo=(ent.data||[]).map(e=>({data:e.data, bairro:e.bairro, pesquisador:e.pesquisador,
+    tipo_atividade:'Pesquisa (entrevista)', pessoas_alcancadas:1, apoiadores_registrados:0,
+    liderancas_contatadas:0, mobilizadores_novos:0, demandas:null, proxima_acao:null,
+    possivel_duplicidade:false, revisar:false}));
+  LANC = [...(l.data||[]), ...entPseudo].sort((a,b)=>String(b.data).localeCompare(String(a.data)));
+  // cobertura do mapa tambem conta as entrevistas por bairro
+  const entB={};
+  (ent.data||[]).forEach(e=>{const b=entB[e.bairro] ??= {n:0,ult:null}; b.n++; if(!b.ult||e.data>b.ult) b.ult=e.data;});
+  COB = (c.data||[]).map(cb=>{
+    const x=entB[cb.bairro]; if(!x) return cb;
+    return {...cb, atividades:(+cb.atividades||0)+x.n, pessoas_alcancadas:(+cb.pessoas_alcancadas||0)+x.n,
+      ultima_atividade: (!cb.ultima_atividade || x.ult>cb.ultima_atividade) ? x.ult : cb.ultima_atividade};
+  });
+  PESQ = p.data||[];
   (cfg.data||[]).forEach(r=>CFG[r.chave]=+r.valor);
   $('atualizado').textContent = new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
   montarFiltros(); render();
