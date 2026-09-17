@@ -146,6 +146,9 @@ let APELIDOS = {}, AUTOMERGE = {};
 const canonAp = (campo,v) => { if(!v||isCod(v)) return v; const m=APELIDOS[CARGO_KEY[campo]]; const c=m && m[normNome(v)]; return c||v; };
 const canon = (campo,v) => { const b=canonAp(campo,v); if(!b||isCod(b)) return b; const g=AUTOMERGE[campo]; const c=g && g[normNome(b)]; return c||b; };
 // nome avulso vira o composto quando só existe UM compatível no cargo (ex.: Patrus -> Patrus Ananias); ambíguo fica separado
+// respostas com negação ("menos lula", "fora bolsonaro"...) NÃO se juntam a nome nenhum — é rejeição, não voto
+const NEGACAO=['menos','fora','nunca','nao','sem','exceto','tirando','anti','contra','jamais'];
+const temNegacao = k => k.split(' ').some(t=>NEGACAO.includes(t));
 function construirAutoMerge(){
   AUTOMERGE={};
   CARGOS.forEach(c=>{
@@ -153,8 +156,9 @@ function construirAutoMerge(){
     ENT.forEach(e=>{ const v=canonAp(c.campo,e[c.campo]); if(!v||isCod(v)) return; const k=normNome(v); if(k && !nomes[k]) nomes[k]=v.trim(); });
     const keys=Object.keys(nomes), m={};
     keys.forEach(a=>{
+      if(temNegacao(a)) return;
       const ta=a.split(' ');
-      const cand=keys.filter(b=>{ if(b===a) return false; const tb=b.split(' '); return tb.length>ta.length && ta.every(t=>tb.includes(t)); });
+      const cand=keys.filter(b=>{ if(b===a) return false; if(temNegacao(b)) return false; const tb=b.split(' '); return tb.length>ta.length && ta.every(t=>tb.includes(t)); });
       if(cand.length===1) m[a]=nomes[cand[0]];
     });
     AUTOMERGE[c.campo]=m;
