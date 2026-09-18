@@ -245,8 +245,8 @@ function auditoria(rs){
     let local = '<span style="color:#999">—</span>';
     if(e.lat!=null && e.lng!=null){
       local = `<a href="https://www.google.com/maps?q=${e.lat},${e.lng}" target="_blank" rel="noopener" style="text-decoration:none">📍 Mapa${e.gps_precisao_m?` (±${e.gps_precisao_m}m)`:''}</a>`;
-      if(e.rua) local += `<br><span style="font-size:11px;color:#777">${esc(e.rua)}</span>`;
-    } else if(e.rua){ local = esc(e.rua); }
+      if(e.rua) local += `<br><span style="font-size:11px;color:#777">${esc(e.rua)}${e.numero?', nº '+esc(e.numero):''}</span>`;
+    } else if(e.rua){ local = esc(e.rua)+(e.numero?', nº '+esc(e.numero):''); }
     return `<tr><td>${quando}</td><td>${esc(e.bairro)}</td><td>${local}</td><td>${esc(e.pesquisador)}</td><td>${esc(voto)}</td><td>${audio}</td></tr>`;
   }).join('')||'<tr><td colspan="6" style="text-align:center;color:#777">Sem entrevistas.</td></tr>';
 }
