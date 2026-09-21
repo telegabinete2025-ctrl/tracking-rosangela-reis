@@ -69,7 +69,10 @@
     <option value="14">Últimos 14 dias</option>
     <option value="30">Últimos 30 dias</option>
     <option value="tudo">Toda a campanha</option>
+    <option value="custom">Escolher período…</option>
   </select>
+  <input type="date" id="fIni" style="display:none;padding:7px;border:1px solid var(--borda);border-radius:8px;font-size:14px">
+  <input type="date" id="fFim" style="display:none;padding:7px;border:1px solid var(--borda);border-radius:8px;font-size:14px">
   <select id="fBairro"><option value="">Todos os bairros</option></select>
   <select id="fPesquisador"><option value="">Todos os pesquisadores</option></select>
 </div>
@@ -201,6 +204,11 @@ function intervalo(){
   const h=hojeStr(), p=$('fPeriodo').value;
   if(p==='hoje') return [h,h];
   if(p==='tudo') return ['2000-01-01',h];
+  if(p==='custom'){
+    const i=$('fIni').value, f=$('fFim').value;
+    if(i&&f) return i<=f ? [i,f] : [f,i];
+    return [i||f||h, f||i||h];
+  }
   return [addDias(h,-(+p-1)),h];
 }
 function filtrar(ini,fim){
@@ -354,7 +362,12 @@ $('btnRel').onclick=()=>{
 };
 $('btnCopiar').onclick=async()=>{await navigator.clipboard.writeText($('relatorio').textContent);$('btnCopiar').textContent='✅ Copiado';setTimeout(()=>$('btnCopiar').textContent='Copiar',2000)};
 
-['fPeriodo','fBairro','fPesquisador'].forEach(i=>$(i).addEventListener('change',render));
+['fPeriodo','fBairro','fPesquisador','fIni','fFim'].forEach(i=>$(i).addEventListener('change',render));
+$('fPeriodo').addEventListener('change', ()=>{
+  const mostra = $('fPeriodo').value==='custom' ? 'inline-block' : 'none';
+  $('fIni').style.display=mostra; $('fFim').style.display=mostra;
+  if(mostra!=='none' && !$('fIni').value){ $('fIni').value=addDias(hojeStr(),-6); $('fFim').value=hojeStr(); render(); }
+});
 $('btnEntrar').addEventListener('click', ()=>{
   const s=$('senhaInput').value.trim(); if(!s) return;
   SENHA=s; try{ localStorage.setItem('painel_senha',s); }catch(_){}
