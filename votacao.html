@@ -175,10 +175,21 @@ function pedirSenha(msg){
   $('senhaMsg').textContent=msg||'';
   try{ $('senhaInput').focus(); }catch(_){}
 }
+// a API entrega no maximo 1000 linhas por chamada — busca em paginas ate trazer tudo
+async function buscarTudo(){
+  const tudo=[], P=1000;
+  for(let i=0;;i+=P){
+    const r=await sb.rpc('tracking_painel',{p_senha:SENHA}).range(i,i+P-1);
+    if(r.error) return r;
+    tudo.push(...(r.data||[]));
+    if((r.data||[]).length<P) break;
+  }
+  return {data:tudo, error:null};
+}
 async function carregar(){
   if(!SENHA){ pedirSenha(); return; }
   const [r, ap] = await Promise.all([
-    sb.rpc('tracking_painel', {p_senha: SENHA}),
+    buscarTudo(),
     sb.from('tracking_apelidos').select('cargo,alias,nome')
   ]);
   if(r.error){
