@@ -129,12 +129,23 @@ const addDias = (s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n)
 const fmt = n => (n||0).toLocaleString('pt-BR');
 
 async function carregar(){
+  // a API entrega no maximo 1000 linhas por chamada — busca a producao em paginas
+  async function buscarProducao(){
+    const tudo=[], P=1000;
+    for(let i=0;;i+=P){
+      const r=await sb.from('v_tracking_producao').select('*').range(i,i+P-1);
+      if(r.error) return r;
+      tudo.push(...(r.data||[]));
+      if((r.data||[]).length<P) break;
+    }
+    return {data:tudo};
+  }
   const [l,c,cfg,p,ent] = await Promise.all([
     sb.from('v_tracking_lancamentos').select('*').eq('teste',false).order('data',{ascending:false}).limit(5000),
     sb.from('v_tracking_cobertura').select('*'),
     sb.from('v_tracking_config').select('*'),
     sb.from('v_tracking_pesquisadores').select('id,nome'),
-    sb.from('v_tracking_producao').select('*').limit(10000)
+    buscarProducao()
   ]);
   // entrevistas da pesquisa viram atividades de producao (1 pessoa alcancada cada; sem votos)
   const entPseudo=(ent.data||[]).map(e=>({data:e.data, bairro:e.bairro, pesquisador:e.pesquisador,
