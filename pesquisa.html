@@ -38,6 +38,17 @@
   #gravStatus{display:none;text-align:center;font-size:14px;font-weight:700;color:var(--vermelho);padding:6px 0}
   #gravStatus .pisca{animation:pisca 1s infinite}
   @keyframes pisca{50%{opacity:.2}}
+  .disco{border:2px solid var(--azul)}
+  .instr{font-size:12.5px;font-weight:700;color:#8a5a09;background:#fef7e0;border:1px solid #f5e3a3;border-radius:6px;padding:9px;margin:0 0 8px;text-align:center;line-height:1.35}
+  .disco-lista button,.disco-saidas button{display:flex;align-items:center;gap:10px;width:100%;padding:13px 10px;margin-bottom:6px;border:1.5px solid var(--borda);border-radius:8px;background:#fff;font-size:16px;font-weight:600;color:#1c1e21;text-align:left;cursor:pointer}
+  .disco-lista button.sel,.disco-saidas button.sel{background:var(--sel);border-color:var(--sel);color:#fff}
+  .disco-lista .num{font-variant-numeric:tabular-nums;font-weight:800;background:#eef2f7;color:var(--azul);border-radius:6px;padding:5px 8px;min-width:62px;text-align:center;font-size:15px;flex:none}
+  .disco-lista button.sel .num{background:#fff;color:var(--azul)}
+  .disco-lista .part{font-size:11px;color:#8a8a8a;font-weight:700}
+  .disco-lista button.sel .part{color:#cfe0f0}
+  .disco-saidas{margin-top:10px;border-top:1px dashed var(--borda);padding-top:10px}
+  .disco-saidas button{justify-content:center;font-weight:700;color:#555;font-size:15px}
+  .versao{text-align:center;font-size:11px;color:#9aa0a6;padding:8px 0 2px}
 </style>
 </head>
 <body>
@@ -85,8 +96,10 @@
 </div>
 
 <div id="cargos"></div>
+<div id="discos"></div>
 
 <button id="btnEnviar">REGISTRAR ENTREVISTA</button>
+<div class="versao" id="versao"></div>
 </div>
 <div id="msg"></div>
 </main>
@@ -117,6 +130,76 @@ $('cargos').innerHTML = CARGOS.map(c=>`
     <div class="nome"><input id="n_${c.campo}" placeholder="Digite o nome citado" autocomplete="off" maxlength="80"></div>
     <div class="ops" id="g_${c.campo}">${CODS.map(([v,r])=>`<button data-v="${v}">${r}</button>`).join('')}</div>
   </div>`).join('');
+
+// ===== DISCO — pesquisa ESTIMULADA (mostrada DEPOIS da espontânea) =====
+const DISCO_VERSAO = 'disco-2026-10-01';
+const DISCOS = [
+  {campo:'federal', titulo:'7º — Deputado FEDERAL',
+   pergunta:'"Destes candidatos a deputado federal, em qual o(a) senhor(a) votaria?"',
+   nomes:[
+     {n:'2222', nome:'Nikolas Ferreira',    p:'PL'},
+     {n:'2215', nome:'Rosângela Reis',      p:'PL'},
+     {n:'2260', nome:'Dr. Marcos Vinícius', p:'PL'},
+     {n:'7078', nome:'Vianei',              p:'AVANTE'},
+     {n:'1516', nome:'Adriana Rodrigues',   p:'MDB'},
+     {n:'3050', nome:'Hermínio Bernardo',   p:'NOVO'},
+     {n:'2280', nome:'Vinicius Diniz',      p:'PL'},
+     {n:'1090', nome:'Coronel Edvânio',     p:'REPUBLICANOS'},
+     {n:'4431', nome:'Professora Mariene',  p:'UNIÃO'}
+   ]},
+  {campo:'estadual', titulo:'8º — Deputado ESTADUAL',
+   pergunta:'"E destes candidatos a deputado estadual, em qual votaria?"',
+   nomes:[
+     {n:'45500', nome:'Heleno do Hospital',   p:'PSDB'},
+     {n:'25500', nome:'Andrade',              p:'PRD'},
+     {n:'65112', nome:'Celinho Sintrocel',    p:'PCdoB'},
+     {n:'25456', nome:'Matheus Braga',        p:'PRD'},
+     {n:'25800', nome:'Márcio Lima da Saúde', p:'PRD'},
+     {n:'25235', nome:'Daniel do Bem',        p:'PRD'},
+     {n:'22888', nome:'Ugleno Alves',         p:'PL'},
+     {n:'22015', nome:'Alê Silva',            p:'PL'}
+   ]}
+];
+const SAIDAS = [['NENHUM_DESTES','Nenhum destes'],['INDECISO','Ainda não decidiu'],['BRANCO_NULO','Branco ou nulo']];
+const giro = {federal:0, estadual:0};
+
+$('discos').innerHTML = DISCOS.map(d=>`
+  <div class="card disco">
+    <h2>${d.titulo} — estimulada</h2>
+    <p class="instr">📱 VIRE A TELA para o eleitor e peça que ele aponte.<br>NÃO leia os nomes em voz alta.</p>
+    <p class="pergunta">${d.pergunta}</p>
+    <div class="disco-lista" id="d_${d.campo}"></div>
+    <div class="disco-saidas" id="s_${d.campo}">${SAIDAS.map(([v,r])=>`<button type="button" data-v="${v}">${r}</button>`).join('')}</div>
+  </div>`).join('');
+
+function sortearGiro(){
+  DISCOS.forEach(d=>{
+    giro[d.campo] = Math.floor(Math.random()*d.nomes.length);
+    const ordem = d.nomes.slice(giro[d.campo]).concat(d.nomes.slice(0, giro[d.campo]));
+    $('d_'+d.campo).innerHTML = ordem.map(c=>
+      `<button type="button" data-v="${c.nome}"><span class="num">${c.n}</span><span>${c.nome} <span class="part">${c.p}</span></span></button>`
+    ).join('');
+  });
+}
+
+DISCOS.forEach(d=>{
+  escolha['est_'+d.campo]=null;
+  const limpar = ()=>{
+    [...$('d_'+d.campo).children].forEach(x=>x.classList.remove('sel'));
+    [...$('s_'+d.campo).children].forEach(x=>x.classList.remove('sel'));
+  };
+  const clique = e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    const ja=b.classList.contains('sel');
+    limpar();
+    if(ja){ escolha['est_'+d.campo]=null; return; }
+    b.classList.add('sel'); escolha['est_'+d.campo]=b.dataset.v;
+  };
+  $('d_'+d.campo).addEventListener('click', clique);
+  $('s_'+d.campo).addEventListener('click', clique);
+});
+sortearGiro();
+$('versao').textContent = 'formulário '+DISCO_VERSAO+' — com disco estimulado';
 
 function grupo(gid, chave){
   $(gid).addEventListener('click', e=>{
@@ -200,6 +283,7 @@ $('btnIniciar').addEventListener('click', async ()=>{
       $('gravTempo').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
     },1000);
   }
+  sortearGiro(); // rodízio do disco: cada entrevista vê os nomes começando por outro
   $('telaForm').hidden=false;
   mostrar('ok','Entrevista iniciada — pode começar as perguntas.');
 });
@@ -265,6 +349,9 @@ $('btnEnviar').addEventListener('click', async ()=>{
   for(const c of CARGOS){
     if(!votoDe(c.campo)) return mostrar('erro','Responda "'+c.titulo.replace(/^\d+º — /,'')+'": digite o nome ou marque uma opção.');
   }
+  for(const d of DISCOS){
+    if(!escolha['est_'+d.campo]) return mostrar('erro','Falta o disco de '+d.titulo.replace(/^\d+º — /,'')+': mostre a tela ao eleitor e marque a resposta dele.');
+  }
   $('btnEnviar').disabled=true;
   // ÁUDIO OBRIGATÓRIO: a entrevista só é registrada com a gravação enviada
   if(!audioPathPendente){
@@ -298,6 +385,11 @@ $('btnEnviar').addEventListener('click', async ()=>{
     voto_senador2: votoDe('senador2'),
     voto_governador: votoDe('governador'),
     voto_presidente: votoDe('presidente'),
+    est_federal: escolha.est_federal,
+    est_estadual: escolha.est_estadual,
+    disco_giro_federal: giro.federal,
+    disco_giro_estadual: giro.estadual,
+    disco_versao: DISCO_VERSAO,
     audio_path: audioPath,
     rua: $('rua').value.trim(),
     numero: $('numero').value.trim(),
@@ -322,6 +414,11 @@ $('btnEnviar').addEventListener('click', async ()=>{
     $('n_'+c.campo).value=''; $('n_'+c.campo).classList.remove('tem');
     [...$('g_'+c.campo).children].forEach(x=>x.classList.remove('sel'));
   });
+  DISCOS.forEach(d=>{
+    escolha['est_'+d.campo]=null;
+    [...$('s_'+d.campo).children].forEach(x=>x.classList.remove('sel'));
+  });
+  sortearGiro();
   mostrar('ok','✅ Registrada com áudio! Pode partir para a próxima.');
   window.scrollTo({top:0,behavior:'smooth'});
   atualizarContador();
