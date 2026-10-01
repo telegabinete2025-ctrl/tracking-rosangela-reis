@@ -40,6 +40,8 @@
   @keyframes pisca{50%{opacity:.2}}
   .disco{border:2px solid var(--azul)}
   .instr{font-size:12.5px;font-weight:700;color:#8a5a09;background:#fef7e0;border:1px solid #f5e3a3;border-radius:6px;padding:9px;margin:0 0 8px;text-align:center;line-height:1.35}
+  .ctx{font-size:11.5px;font-weight:600;color:var(--azul);background:#eef2f7;border:1px solid #d5e0ec;border-radius:6px;padding:7px 9px;margin:0 0 8px}
+  .ctx.falta{color:#8a5a09;background:#fef7e0;border-color:#f5e3a3}
   .disco-lista button,.disco-saidas button{display:flex;align-items:center;gap:10px;width:100%;padding:13px 10px;margin-bottom:6px;border:1.5px solid var(--borda);border-radius:8px;background:#fff;font-size:16px;font-weight:600;color:#1c1e21;text-align:left;cursor:pointer}
   .disco-lista button.sel,.disco-saidas button.sel{background:var(--sel);border-color:var(--sel);color:#fff}
   .disco-lista .num{font-variant-numeric:tabular-nums;font-weight:800;background:#eef2f7;color:var(--azul);border-radius:6px;padding:5px 8px;min-width:62px;text-align:center;font-size:15px;flex:none}
@@ -97,6 +99,7 @@
 
 <div id="cargos"></div>
 <div id="discos"></div>
+<div id="cargos2"></div>
 
 <button id="btnEnviar">REGISTRAR ENTREVISTA</button>
 <div class="versao" id="versao"></div>
@@ -116,25 +119,30 @@ const escolha = {sexo:null, faixa:null};
 const CARGOS = [
   {campo:'federal',    titulo:'1º — Deputado FEDERAL',  pergunta:'"Se a eleição fosse hoje, em quem o(a) senhor(a) votaria para deputado federal?" (não cite nomes)'},
   {campo:'estadual',   titulo:'2º — Deputado ESTADUAL', pergunta:'"E para deputado estadual, em quem votaria?"'},
-  {campo:'senador1',   titulo:'3º — Senador (1º voto)', pergunta:'"Este ano são DOIS votos para senador. Qual o primeiro nome?"'},
-  {campo:'senador2',   titulo:'4º — Senador (2º voto)', pergunta:'"E o segundo nome para senador?"'},
-  {campo:'governador', titulo:'5º — Governador',        pergunta:'"E para governador de Minas, em quem votaria?"'},
-  {campo:'presidente', titulo:'6º — Presidente',        pergunta:'"E para presidente da República?"'}
+  {campo:'senador1',   titulo:'5º — Senador (1º voto)', pergunta:'"Este ano são DOIS votos para senador. Qual o primeiro nome?"'},
+  {campo:'senador2',   titulo:'6º — Senador (2º voto)', pergunta:'"E o segundo nome para senador?"'},
+  {campo:'governador', titulo:'7º — Governador',        pergunta:'"E para governador de Minas, em quem votaria?"'},
+  {campo:'presidente', titulo:'8º — Presidente',        pergunta:'"E para presidente da República?"'}
 ];
 const CODS = [['INDECISO','Não sabe'],['BRANCO_NULO','Branco/Nulo'],['NAO_RESPONDEU','Não respondeu']];
 
-$('cargos').innerHTML = CARGOS.map(c=>`
+const cardCargo = c=>`
   <div class="card">
     <h2>${c.titulo} — espontânea</h2>
     <p class="pergunta">${c.pergunta}</p>
     <div class="nome"><input id="n_${c.campo}" placeholder="Digite o nome citado" autocomplete="off" maxlength="80"></div>
     <div class="ops" id="g_${c.campo}">${CODS.map(([v,r])=>`<button data-v="${v}">${r}</button>`).join('')}</div>
-  </div>`).join('');
+  </div>`;
+// deputado federal e estadual vêm antes dos discos; os demais cargos vão para o fim
+const PRI = CARGOS.filter(c=>c.campo==='federal'||c.campo==='estadual');
+const SEC = CARGOS.filter(c=>c.campo!=='federal'&&c.campo!=='estadual');
+$('cargos').innerHTML  = PRI.map(cardCargo).join('');
+$('cargos2').innerHTML = SEC.map(cardCargo).join('');
 
 // ===== DISCO — pesquisa ESTIMULADA (mostrada DEPOIS da espontânea) =====
 const DISCO_VERSAO = 'disco-2026-10-01';
 const DISCOS = [
-  {campo:'federal', titulo:'7º — Deputado FEDERAL',
+  {campo:'federal', titulo:'3º — Deputado FEDERAL',
    pergunta:'"Destes candidatos a deputado federal, em qual o(a) senhor(a) votaria?"',
    nomes:[
      {n:'2222', nome:'Nikolas Ferreira',    p:'PL'},
@@ -147,7 +155,7 @@ const DISCOS = [
      {n:'1090', nome:'Coronel Edvânio',     p:'REPUBLICANOS'},
      {n:'4431', nome:'Professora Mariene',  p:'UNIÃO'}
    ]},
-  {campo:'estadual', titulo:'8º — Deputado ESTADUAL',
+  {campo:'estadual', titulo:'4º — Deputado ESTADUAL',
    pergunta:'"E destes candidatos a deputado estadual, em qual votaria?"',
    nomes:[
      {n:'45500', nome:'Heleno do Hospital',   p:'PSDB'},
@@ -168,6 +176,7 @@ $('discos').innerHTML = DISCOS.map(d=>`
     <h2>${d.titulo} — estimulada</h2>
     <p class="instr">📱 VIRE A TELA para o eleitor e peça que ele aponte.<br>NÃO leia os nomes em voz alta.</p>
     <p class="pergunta">${d.pergunta}</p>
+    <div class="ctx" id="ctx_${d.campo}"></div>
     <div class="disco-lista" id="d_${d.campo}"></div>
     <div class="disco-saidas" id="s_${d.campo}">${SAIDAS.map(([v,r])=>`<button type="button" data-v="${v}">${r}</button>`).join('')}</div>
   </div>`).join('');
@@ -179,6 +188,18 @@ function sortearGiro(){
     $('d_'+d.campo).innerHTML = ordem.map(c=>
       `<button type="button" data-v="${c.nome}"><span class="num">${c.n}</span><span>${c.nome} <span class="part">${c.p}</span></span></button>`
     ).join('');
+  });
+  atualizarCtx();
+}
+
+function atualizarCtx(){
+  DISCOS.forEach(d=>{
+    const el = $('ctx_'+d.campo); if(!el) return;
+    const inp = $('n_'+d.campo);
+    const v = (inp && inp.value.trim()) || escolha[d.campo];
+    const legenda = {INDECISO:'não soube dizer nenhum nome', BRANCO_NULO:'disse branco ou nulo', NAO_RESPONDEU:'não quis responder'};
+    if(!v){ el.className='ctx falta'; el.textContent='⚠ Responda primeiro a pergunta aberta deste cargo.'; }
+    else { el.className='ctx'; el.textContent = 'Na pergunta aberta: ' + (legenda[v] || v); }
   });
 }
 
@@ -218,6 +239,7 @@ CARGOS.forEach(c=>{
   inp.addEventListener('input', ()=>{
     inp.classList.toggle('tem', !!inp.value.trim());
     if(inp.value.trim()){ [...g.children].forEach(x=>x.classList.remove('sel')); escolha[c.campo]=null; }
+    atualizarCtx();
   });
   g.addEventListener('click', e=>{
     const b=e.target.closest('button'); if(!b) return;
@@ -226,6 +248,7 @@ CARGOS.forEach(c=>{
     if(ja){ escolha[c.campo]=null; return; }
     b.classList.add('sel'); escolha[c.campo]=b.dataset.v;
     inp.value=''; inp.classList.remove('tem');
+    atualizarCtx();
   });
 });
 
@@ -346,11 +369,14 @@ $('btnEnviar').addEventListener('click', async ()=>{
   if(!$('rua').value.trim()) return mostrar('erro','Preencha a RUA — endereço é obrigatório.');
   if(!$('numero').value.trim()) return mostrar('erro','Preencha o NÚMERO — se não tiver número, escreva S/N.');
   if(!entrevistaIniciada) return mostrar('erro','Toque em ▶️ INICIAR ENTREVISTA antes de começar (é o que liga a gravação).');
-  for(const c of CARGOS){
+  for(const c of PRI){
     if(!votoDe(c.campo)) return mostrar('erro','Responda "'+c.titulo.replace(/^\d+º — /,'')+'": digite o nome ou marque uma opção.');
   }
   for(const d of DISCOS){
     if(!escolha['est_'+d.campo]) return mostrar('erro','Falta o disco de '+d.titulo.replace(/^\d+º — /,'')+': mostre a tela ao eleitor e marque a resposta dele.');
+  }
+  for(const c of SEC){
+    if(!votoDe(c.campo)) return mostrar('erro','Responda "'+c.titulo.replace(/^\d+º — /,'')+'": digite o nome ou marque uma opção.');
   }
   $('btnEnviar').disabled=true;
   // ÁUDIO OBRIGATÓRIO: a entrevista só é registrada com a gravação enviada
