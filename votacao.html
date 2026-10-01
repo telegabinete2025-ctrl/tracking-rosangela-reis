@@ -79,6 +79,8 @@
 
 <div class="kpis" id="cards"></div>
 
+<div id="estimulada" style="margin-top:14px"></div>
+
 <div id="secoes" style="margin-top:14px"></div>
 
 <div class="card">
@@ -249,8 +251,8 @@ function render(){
     `<div class="kpi verde"><div class="v">${pf(ros,n)}</div><div class="l">Rosângela — Federal</div><div class="c">±${margem(pR,n)} p.p. · ${fmt(ros)} citações</div></div>`,
     `<div class="kpi amarelo"><div class="v">${pf(contaCod(rs,'voto_federal','INDECISO'),n)}</div><div class="l">Indecisos — Federal</div><div class="c">oportunidade de convencimento</div></div>`,
     `<div class="kpi"><div class="v">${pf(contaCod(rs,'voto_federal','NAO_RESPONDEU')+contaCod(rs,'voto_federal','BRANCO_NULO'),n)}</div><div class="l">Branco/nulo + não resp. — Fed.</div><div class="c">no período filtrado</div></div>`
-  ].join('');
-  secoes(rs); grafico(); porBairro(rs); porPerfil(rs); auditoria(rs);
+  ].concat(cardEstimulada(rs)).join('');
+  estimuladaBloco(rs); secoes(rs); grafico(); porBairro(rs); porPerfil(rs); auditoria(rs);
 }
 
 function auditoria(rs){
@@ -278,6 +280,41 @@ $('tAudit').addEventListener('click', async ev=>{
   a.src=r.data.signedUrl; a.style.height='30px'; a.style.maxWidth='220px';
   b.replaceWith(a);
 });
+
+// ===== DISCO — pesquisa ESTIMULADA (a partir de 01/10/2026) =====
+const CODIGOS_EST = {NENHUM_DESTES:'Nenhum destes', INDECISO:'Ainda não decidiu', BRANCO_NULO:'Branco / nulo'};
+const comDisco = rs => rs.filter(e=>e.est_federal);
+function rankEst(ds, campo){
+  const m={};
+  ds.forEach(e=>{ const v=e[campo]; if(!v || (v in CODIGOS_EST)) return; (m[v] ??= {n:0, exemplo:v}).n++; });
+  return Object.values(m).sort((a,b)=>b.n-a.n);
+}
+function cardEstimulada(rs){
+  const ds=comDisco(rs); if(!ds.length) return [];
+  const r=ds.filter(e=>isRos(e.est_federal)).length;
+  const ind=ds.filter(e=>e.voto_federal==='INDECISO');
+  const conv=ind.filter(e=>e.est_federal && !(e.est_federal in CODIGOS_EST)).length;
+  return [
+    `<div class="kpi verde"><div class="v">${pf(r,ds.length)}</div><div class="l">Rosângela — ESTIMULADA</div><div class="c">${fmt(r)} de ${fmt(ds.length)} com disco</div></div>`,
+    `<div class="kpi"><div class="v">${pf(conv,ind.length)}</div><div class="l">Indeciso que converteu</div><div class="c">${fmt(conv)} de ${fmt(ind.length)} indecisos apontaram alguém</div></div>`
+  ];
+}
+function estimuladaBloco(rs){
+  const ds=comDisco(rs), n=ds.length;
+  if(!n){ $('estimulada').innerHTML=''; return; }
+  const cartao=(campo,rot)=>{
+    const top=rankEst(ds,campo);
+    const linhas=[
+      ...top.map(v=>({rot:esc(v.exemplo), q:v.n, cor: (isRos(v.exemplo)&&campo==='est_federal')?'var(--verde)':'#3a6ea5', b:true})),
+      ...Object.entries(CODIGOS_EST).map(([cod,r2])=>({rot:r2, q:ds.filter(e=>e[campo]===cod).length, cor: cod==='NENHUM_DESTES'?'#8a919b':'#b8860b', b:false}))
+    ];
+    return `<div class="card"><h2>${rot} — ESTIMULADA (disco)</h2>`+
+      linhas.map(l=>`<div class="fatia"><div class="rot"><span>${l.b?'<b>'+l.rot+'</b>':l.rot}</span><b>${pf(l.q,n)} (${fmt(l.q)})</b></div>
+        <div class="trilho"><div class="barra" style="width:${pct(l.q,n)}%;background:${l.cor}"></div></div></div>`).join('')+
+      `<div class="nota">Sobre ${fmt(n)} entrevistas com disco no período. Não comparar com a espontânea — uma mede lembrança, a outra reconhecimento.</div></div>`;
+  };
+  $('estimulada').innerHTML = `<div class="duas">${cartao('est_federal','Deputado Federal')}${cartao('est_estadual','Deputado Estadual')}</div>`;
+}
 
 // uma seção por cargo, na sequência da urna: nomes mais citados + códigos
 function secoes(rs){
